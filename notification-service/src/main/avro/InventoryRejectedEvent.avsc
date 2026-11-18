@@ -1,0 +1,9 @@
+{
+  "type": "record",
+  "name": "InventoryRejectedEvent",
+  "namespace": "com.sndbx.inventory.event",
+  "fields": [
+    { "name": "orderId", "type": { "type": "string", "logicalType": "uuid" } },
+    { "name": "email", "type": "string" }
+  ]
+}

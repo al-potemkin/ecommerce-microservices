@@ -1,0 +1,12 @@
+{
+  "type": "record",
+  "name": "OrderPlacedEvent",
+  "namespace": "com.sndbx.order.event",
+  "fields": [
+    { "name": "orderId", "type": { "type": "string", "logicalType": "uuid" } },
+    { "name": "email", "type": "string" },
+    { "name": "productId", "type": "string" },
+    { "name": "quantity", "type": "int" },
+    { "name": "comment", "type": ["string", "null"], "default": null }
+  ]
+}

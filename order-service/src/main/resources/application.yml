@@ -1,0 +1,45 @@
+server:
+  port: 8082
+
+services:
+  inventory:
+    url: ${INVENTORY_URL:http://localhost:8082}
+  product:
+    url: ${PRODUCT_URL:http://localhost:8080}
+
+
+spring:
+  application:
+    name: order-service
+
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: ${KEYCLOAK_ISSUER_URI:http://localhost:8180/realms/ecommerce}
+
+  # Kafka properties
+  kafka:
+    bootstrap-servers: localhost:29092,localhost:29093,localhost:29094
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.UUIDSerializer
+      value-serializer: io.confluent.kafka.serializers.KafkaAvroSerializer
+      acks: all
+      retries: 2147483647
+      properties:
+        "max.in.flight.requests.per.connection": 5
+        "enable.idempotence": true
+        "schema.registry.url": http://localhost:8087
+
+management:
+  tracing:
+    sampling:
+      probability: 1.0
+  otlp:
+    metrics:
+      export:
+        enabled: false
+
+logging:
+  pattern:
+    correlation: "[${spring.application.name:},%X{traceId:-},%X{spanId:-}] "

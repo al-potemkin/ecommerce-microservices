@@ -1,0 +1,91 @@
+{
+  "realm": "ecommerce",
+  "enabled": true,
+
+  "registrationAllowed": true,
+  "registrationEmailAsUsername": false,
+  "loginWithEmailAllowed": true,
+  "duplicateEmailsAllowed": false,
+  "verifyEmail": false,
+  "resetPasswordAllowed": false,
+  "bruteForceProtected": true,
+
+  "accessTokenLifespan": 300,
+  "ssoSessionIdleTimeout": 1800,
+  "ssoSessionMaxLifespan": 36000,
+  "revokeRefreshToken": true,
+  "refreshTokenMaxReuse": 0,
+
+  "roles": {
+    "realm": [
+      { "name": "PRODUCT_MANAGER", "description": "Catalog management (product-service)" },
+      { "name": "INVENTORY_MANAGER", "description": "Inventory management (inventory-service)" }
+    ]
+  },
+
+  "clients": [
+    {
+      "clientId": "ecommerce-web",
+      "name": "Frontend",
+      "enabled": true,
+      "publicClient": true,
+      "standardFlowEnabled": true,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": false,
+      "redirectUris": ["http://localhost:3000/*"],
+      "webOrigins": ["http://localhost:3000"],
+      "attributes": {
+        "pkce.code.challenge.method": "S256",
+        "post.logout.redirect.uris": "http://localhost:3000/*"
+      }
+    },
+    {
+      "clientId": "ecommerce-dev",
+      "name": "Backend",
+      "enabled": true,
+      "publicClient": true,
+      "standardFlowEnabled": false,
+      "directAccessGrantsEnabled": true
+    }
+  ],
+
+  "users": [
+    {
+      "username": "testuser",
+      "email": "testuser@example.com",
+      "emailVerified": true,
+      "firstName": "Test",
+      "lastName": "User",
+      "enabled": true,
+      "credentials": [
+        { "type": "password", "value": "${TEST_USER_PASSWORD}", "temporary": false }
+      ],
+      "realmRoles": ["PRODUCT_MANAGER", "INVENTORY_MANAGER"]
+    },
+    {
+      "username": "inventoryuser",
+      "email": "inventoryuser@example.com",
+      "emailVerified": true,
+      "firstName": "Inventory",
+      "lastName": "User",
+      "enabled": true,
+      "credentials": [
+        { "type": "password", "value": "${TEST_USER_PASSWORD}", "temporary": false }
+      ],
+      "realmRoles": ["INVENTORY_MANAGER"]
+    },
+    {
+      "username": "productuser",
+      "email": "productuser@example.com",
+      "emailVerified": true,
+      "firstName": "Product",
+      "lastName": "User",
+      "enabled": true,
+      "credentials": [
+        { "type": "password", "value": "${TEST_USER_PASSWORD}", "temporary": false }
+      ],
+      "realmRoles": ["PRODUCT_MANAGER"]
+    }
+  ]
+}
