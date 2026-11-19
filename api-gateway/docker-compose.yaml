@@ -1,20 +1,21 @@
 services:
-  keycloak-db:
-    image: postgres:16
+  api-gateway:
+    build: .
     restart: unless-stopped
     environment:
-      POSTGRES_DB: ${KC_DB_NAME}
-      POSTGRES_USER: ${KC_DB_USER}
-      POSTGRES_PASSWORD: ${KC_DB_PASSWORD}
-    volumes:
-      - keycloak-db-data:/var/lib/postgresql/data
-    networks:
-      - backend
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
-      interval: 5s
-      timeout: 3s
-      retries: 10
+      PRODUCT_SERVICE_URL: http://product-stub:8080
+      ORDER_SERVICE_URL: http://order-stub:8080
+      INVENTORY_SERVICE_URL: http://inventory-stub:8080
+      KEYCLOAK_ISSUER_URI: http://localhost:8180/realms/ecommerce
+      KEYCLOAK_JWK_SET_URI: http://keycloak:8080/realms/ecommerce/protocol/openid-connect/certs
+      REDIS_HOST: redis
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+    ports:
+      - "8080:8080"
+    networks: [ backend, edge ]
+    depends_on:
+      redis:
+        condition: service_healthy
 
   keycloak:
     image: quay.io/keycloak/keycloak:26.0
@@ -28,19 +29,61 @@ services:
       KC_DB_USERNAME: ${KC_DB_USER}
       KC_DB_PASSWORD: ${KC_DB_PASSWORD}
       TEST_USER_PASSWORD: ${TEST_USER_PASSWORD}
-
     ports:
       - "127.0.0.1:8180:8080"
-    networks:
-      - backend
+    networks: [ backend, edge ]
     volumes:
       - ./keycloak:/opt/keycloak/data/import
     depends_on:
       keycloak-db:
         condition: service_healthy
 
+  keycloak-db:
+    image: postgres:16
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${KC_DB_NAME}
+      POSTGRES_USER: ${KC_DB_USER}
+      POSTGRES_PASSWORD: ${KC_DB_PASSWORD}
+    volumes:
+      - keycloak-db-data:/var/lib/postgresql/data
+    networks: [ backend ]
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}" ]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  redis:
+    image: redis:7
+    restart: unless-stopped
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+    command: [ "sh", "-c", "exec redis-server --requirepass \"$$REDIS_PASSWORD\"" ]
+    ports:
+      - "127.0.0.1:6379:6379"
+    networks: [ backend ]
+    healthcheck:
+      test: [ "CMD-SHELL", "redis-cli -a \"$$REDIS_PASSWORD\" --no-auth-warning ping | grep -q PONG" ]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  # заглушки сервисов
+  product-stub:
+    image: mendhak/http-https-echo
+    networks: [ backend ]
+  order-stub:
+    image: mendhak/http-https-echo
+    networks: [ backend ]
+  inventory-stub:
+    image: mendhak/http-https-echo
+    networks: [ backend ]
+
 networks:
   backend:
+    internal: true
+  edge:
 
 volumes:
   keycloak-db-data:
