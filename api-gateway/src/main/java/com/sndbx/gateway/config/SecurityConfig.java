@@ -1,37 +1,30 @@
 package com.sndbx.gateway.config;
 
+import com.sndbx.gateway.config.utility.ErrorCode;
 import com.sndbx.gateway.converter.KeycloakRealmRoleConverter;
+import com.sndbx.gateway.handler.ErrorResponder;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.core.io.buffer.DataBuffer;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
 import org.springframework.security.config.annotation.web.reactive.EnableWebFluxSecurity;
 import org.springframework.security.config.web.server.ServerHttpSecurity;
 import org.springframework.security.web.server.SecurityWebFilterChain;
 import org.springframework.security.web.server.ServerAuthenticationEntryPoint;
 import org.springframework.security.web.server.authorization.ServerAccessDeniedHandler;
-import org.springframework.web.server.ServerWebExchange;
-import reactor.core.publisher.Mono;
-
-import java.nio.charset.StandardCharsets;
 
 @Configuration
 @EnableWebFluxSecurity
 public class SecurityConfig {
 
     @Bean
-    SecurityWebFilterChain securityWebFilterChain(ServerHttpSecurity http) {
+    SecurityWebFilterChain securityWebFilterChain(ServerHttpSecurity http, ErrorResponder errors) {
         ServerAuthenticationEntryPoint unauthorized = (exchange, ex) -> {
             exchange.getResponse().getHeaders().set(HttpHeaders.WWW_AUTHENTICATE, "Bearer");
-            return writeError(exchange, HttpStatus.UNAUTHORIZED, "UNAUTHORIZED",
-                    "Требуется авторизация: токен отсутствует, недействителен или просрочен");
+            return errors.write(exchange, ErrorCode.UNAUTHORIZED);
         };
         ServerAccessDeniedHandler forbidden = (exchange, ex) ->
-                writeError(exchange, HttpStatus.FORBIDDEN, "FORBIDDEN",
-                        "Недостаточно прав для этой операции");
+                errors.write(exchange, ErrorCode.FORBIDDEN);
 
         return http
                 .csrf(ServerHttpSecurity.CsrfSpec::disable)
@@ -47,16 +40,5 @@ public class SecurityConfig {
                         .accessDeniedHandler(forbidden)
                         .jwt(jwt -> jwt.jwtAuthenticationConverter(new KeycloakRealmRoleConverter())))
                 .build();
-    }
-
-    private static Mono<Void> writeError(ServerWebExchange exchange, HttpStatus status,
-                                         String code, String message) {
-        String json = """
-                {"status":%d,"code":"%s","message":"%s"}""".formatted(status.value(), code, message);
-        DataBuffer buffer = exchange.getResponse().bufferFactory()
-                .wrap(json.getBytes(StandardCharsets.UTF_8));
-        exchange.getResponse().setStatusCode(status);
-        exchange.getResponse().getHeaders().setContentType(MediaType.APPLICATION_JSON);
-        return exchange.getResponse().writeWith(Mono.just(buffer));
     }
 }
