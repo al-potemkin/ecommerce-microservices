@@ -45,7 +45,7 @@ $commands = @{
     }
 }
 
-# MENU
+# MAVEN COMMAND MENU
 Write-Host "`n========== MAVEN BUILD MENU ==========" -ForegroundColor Cyan
 
 Write-Host "1. mvn clean install"
@@ -57,13 +57,42 @@ Write-Host "6. mvn clean"
 Write-Host "`nPress Ctrl + C to exit." -ForegroundColor DarkGray
 
 do {
-    $choice = Read-Host "`nSelect option (1-6)"
+    $choice = Read-Host "`nSelect command (1-6)"
 } while (-not $commands.ContainsKey($choice))
 
 $selectedCommand = $commands[$choice]
 $testsEnabled = $choice -in @("1", "3")
 
 Write-Host "`nSelected: $($selectedCommand.Name)" -ForegroundColor Yellow
+
+# PROJECT SELECTION
+Write-Host "`n========== PROJECT SELECTION ==========" -ForegroundColor Cyan
+
+Write-Host "1. All services"
+
+for ($i = 0; $i -lt $mavenProjects.Count; $i++) {
+    Write-Host "$($i + 2). $($mavenProjects[$i].Name)"
+}
+
+do {
+    $projectChoice = Read-Host "`nSelect project (1-$($mavenProjects.Count + 1))"
+
+    $validProjectChoice = $projectChoice -match '^\d+$' -and
+        [int]$projectChoice -ge 1 -and
+        [int]$projectChoice -le ($mavenProjects.Count + 1)
+
+} while (-not $validProjectChoice)
+
+if ([int]$projectChoice -eq 1) {
+    $selectedProjects = $mavenProjects
+    $selectedProjectName = "All services"
+}
+else {
+    $selectedProjects = @($mavenProjects[[int]$projectChoice - 2])
+    $selectedProjectName = $selectedProjects[0].Name
+}
+
+Write-Host "`nSelected project: $selectedProjectName" -ForegroundColor Yellow
 
 # CREATE TEMP LOG DIRECTORY
 New-Item -ItemType Directory -Path $logDirectory -Force | Out-Null
@@ -72,7 +101,7 @@ New-Item -ItemType Directory -Path $logDirectory -Force | Out-Null
 $results = @()
 $totalStopwatch = [System.Diagnostics.Stopwatch]::StartNew()
 
-Get-ChildItem -Path $PSScriptRoot -Directory | ForEach-Object {
+$selectedProjects | ForEach-Object {
     $serviceName = $_.Name
     $servicePath = $_.FullName
     $pom = Join-Path $servicePath "pom.xml"
