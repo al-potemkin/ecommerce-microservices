@@ -1,3 +1,7 @@
 spring:
   application:
     name: product-service
+
+  data:
+    mongodb:
+      auto-index-creation: true

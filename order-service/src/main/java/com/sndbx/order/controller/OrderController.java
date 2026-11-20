@@ -39,27 +39,24 @@ public class OrderController {
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public OrderResponse placeOrder(@Valid @RequestBody OrderRequest orderRequest) {
-        return null;
-//        return orderService.placeOrder(orderRequest);
+        return orderService.placeOrder(orderRequest);
     }
 
     @GetMapping("/my")
     @ResponseStatus(HttpStatus.OK)
     public List<OrderResponse> getOrders(@AuthenticationPrincipal Jwt jwt) {
-        return null;
-//        return orderService.getOrdersByUserId(jwt.getSubject());
+        return orderService.getOrdersByUserId(jwt.getSubject());
     }
 
     @GetMapping("/my/{orderId}")
     @ResponseStatus(HttpStatus.OK)
     public OrderResponse getOrderById(@PathVariable Long orderId, @AuthenticationPrincipal Jwt jwt) {
-        return null;
-//        return orderService.getOrderForUser(orderId, jwt.getSubject());
+        return orderService.getOrderForUser(orderId, jwt.getSubject());
     }
 
     @DeleteMapping("/my/{orderId}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void deleteOrderById(@PathVariable Long orderId, @AuthenticationPrincipal Jwt jwt) {
-//        orderService.deleteOrderById(orderId, jwt.getSubject());
+        orderService.deleteOrderById(orderId, jwt.getSubject());
     }
 }
