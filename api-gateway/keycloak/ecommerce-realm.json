@@ -1,7 +1,6 @@
 {
   "realm": "ecommerce",
   "enabled": true,
-
   "registrationAllowed": true,
   "registrationEmailAsUsername": false,
   "loginWithEmailAllowed": true,
@@ -9,20 +8,27 @@
   "verifyEmail": false,
   "resetPasswordAllowed": false,
   "bruteForceProtected": true,
-
   "accessTokenLifespan": 300,
   "ssoSessionIdleTimeout": 1800,
   "ssoSessionMaxLifespan": 36000,
   "revokeRefreshToken": true,
   "refreshTokenMaxReuse": 0,
-
   "roles": {
     "realm": [
-      { "name": "PRODUCT_MANAGER", "description": "Catalog management (product-service)" },
-      { "name": "INVENTORY_MANAGER", "description": "Inventory management (inventory-service)" }
+      {
+        "name": "PRODUCT_MANAGER",
+        "description": "Catalog management (product-service)"
+      },
+      {
+        "name": "INVENTORY_MANAGER",
+        "description": "Inventory management (inventory-service)"
+      },
+      {
+        "name": "INTERNAL_SERVICE",
+        "description": "Service-to-service calls without a user"
+      }
     ]
   },
-
   "clients": [
     {
       "clientId": "ecommerce-web",
@@ -33,8 +39,12 @@
       "implicitFlowEnabled": false,
       "directAccessGrantsEnabled": false,
       "serviceAccountsEnabled": false,
-      "redirectUris": ["http://localhost:3000/*"],
-      "webOrigins": ["http://localhost:3000"],
+      "redirectUris": [
+        "http://localhost:3000/*"
+      ],
+      "webOrigins": [
+        "http://localhost:3000"
+      ],
       "attributes": {
         "pkce.code.challenge.method": "S256",
         "post.logout.redirect.uris": "http://localhost:3000/*"
@@ -47,9 +57,68 @@
       "publicClient": true,
       "standardFlowEnabled": false,
       "directAccessGrantsEnabled": true
+    },
+    {
+      "clientId": "notification-service",
+      "name": "notification-service",
+      "enabled": true,
+      "publicClient": false,
+      "secret": "${NOTIFICATION_SERVICE_SECRET}",
+      "serviceAccountsEnabled": true,
+      "standardFlowEnabled": false,
+      "directAccessGrantsEnabled": false
+    },
+    {
+      "clientId": "product-service",
+      "name": "product-service",
+      "enabled": true,
+      "publicClient": false,
+      "secret": "${PRODUCT_SERVICE_SECRET}",
+      "serviceAccountsEnabled": true,
+      "standardFlowEnabled": false,
+      "directAccessGrantsEnabled": false
+    },
+    {
+      "clientId": "order-service",
+      "name": "order-service",
+      "enabled": true,
+      "publicClient": false,
+      "secret": "${ORDER_SERVICE_SECRET}",
+      "serviceAccountsEnabled": true,
+      "standardFlowEnabled": false,
+      "directAccessGrantsEnabled": false
+    },
+    {
+      "clientId": "inventory-service",
+      "name": "inventory-service",
+      "enabled": true,
+      "publicClient": false,
+      "secret": "${INVENTORY_SERVICE_SECRET}",
+      "serviceAccountsEnabled": true,
+      "standardFlowEnabled": false,
+      "directAccessGrantsEnabled": false
+    },
+    {
+      "clientId": "analytics-service",
+      "name": "analytics-service",
+      "enabled": true,
+      "publicClient": false,
+      "secret": "${ANALYTICS_SERVICE_SECRET}",
+      "serviceAccountsEnabled": true,
+      "standardFlowEnabled": false,
+      "directAccessGrantsEnabled": false
+    },
+    {
+      "clientId": "dlt-processor-service",
+      "name": "dlt-processor-service",
+      "enabled": true,
+      "publicClient": false,
+      "secret": "${DLT_PROCESSOR_SERVICE_SECRET}",
+      "serviceAccountsEnabled": true,
+      "standardFlowEnabled": false,
+      "directAccessGrantsEnabled": false
     }
   ],
-
   "users": [
     {
       "username": "testuser",
@@ -59,9 +128,16 @@
       "lastName": "User",
       "enabled": true,
       "credentials": [
-        { "type": "password", "value": "${TEST_USER_PASSWORD}", "temporary": false }
+        {
+          "type": "password",
+          "value": "${TEST_USER_PASSWORD}",
+          "temporary": false
+        }
       ],
-      "realmRoles": ["PRODUCT_MANAGER", "INVENTORY_MANAGER"]
+      "realmRoles": [
+        "PRODUCT_MANAGER",
+        "INVENTORY_MANAGER"
+      ]
     },
     {
       "username": "inventoryuser",
@@ -71,9 +147,15 @@
       "lastName": "User",
       "enabled": true,
       "credentials": [
-        { "type": "password", "value": "${TEST_USER_PASSWORD}", "temporary": false }
+        {
+          "type": "password",
+          "value": "${TEST_USER_PASSWORD}",
+          "temporary": false
+        }
       ],
-      "realmRoles": ["INVENTORY_MANAGER"]
+      "realmRoles": [
+        "INVENTORY_MANAGER"
+      ]
     },
     {
       "username": "productuser",
@@ -83,9 +165,63 @@
       "lastName": "User",
       "enabled": true,
       "credentials": [
-        { "type": "password", "value": "${TEST_USER_PASSWORD}", "temporary": false }
+        {
+          "type": "password",
+          "value": "${TEST_USER_PASSWORD}",
+          "temporary": false
+        }
       ],
-      "realmRoles": ["PRODUCT_MANAGER"]
+      "realmRoles": [
+        "PRODUCT_MANAGER"
+      ]
+    },
+    {
+      "username": "service-account-notification-service",
+      "enabled": true,
+      "serviceAccountClientId": "notification-service",
+      "realmRoles": [
+        "INTERNAL_SERVICE"
+      ]
+    },
+    {
+      "username": "service-account-product-service",
+      "enabled": true,
+      "serviceAccountClientId": "product-service",
+      "realmRoles": [
+        "INTERNAL_SERVICE"
+      ]
+    },
+    {
+      "username": "service-account-order-service",
+      "enabled": true,
+      "serviceAccountClientId": "order-service",
+      "realmRoles": [
+        "INTERNAL_SERVICE"
+      ]
+    },
+    {
+      "username": "service-account-inventory-service",
+      "enabled": true,
+      "serviceAccountClientId": "inventory-service",
+      "realmRoles": [
+        "INTERNAL_SERVICE"
+      ]
+    },
+    {
+      "username": "service-account-analytics-service",
+      "enabled": true,
+      "serviceAccountClientId": "analytics-service",
+      "realmRoles": [
+        "INTERNAL_SERVICE"
+      ]
+    },
+    {
+      "username": "service-account-dlt-processor-service",
+      "enabled": true,
+      "serviceAccountClientId": "dlt-processor-service",
+      "realmRoles": [
+        "INTERNAL_SERVICE"
+      ]
     }
   ]
 }

@@ -10,12 +10,13 @@ import org.springframework.web.server.ServerWebExchange;
 import org.springframework.web.server.WebExceptionHandler;
 import reactor.core.publisher.Mono;
 
+/**
+ * before the standard Boot handler (-1)
+ */
 @Component
-@Order(-2)   // раньше стандартного обработчика Boot (-1)
+@Order(-2)
 public class ApiErrorWebExceptionHandler implements WebExceptionHandler {
-
     private static final Logger log = LoggerFactory.getLogger(ApiErrorWebExceptionHandler.class);
-
     private final ErrorResponder errors;
 
     public ApiErrorWebExceptionHandler(ErrorResponder errors) {
@@ -32,8 +33,7 @@ public class ApiErrorWebExceptionHandler implements WebExceptionHandler {
                 : ErrorCode.INTERNAL_ERROR;
 
         if (code.status().is5xxServerError()) {
-            log.error("{} {} failed", exchange.getRequest().getMethod(),
-                    exchange.getRequest().getPath(), ex);
+            log.error("{} {} failed", exchange.getRequest().getMethod(), exchange.getRequest().getPath(), ex);
         }
         return errors.write(exchange, code);
     }

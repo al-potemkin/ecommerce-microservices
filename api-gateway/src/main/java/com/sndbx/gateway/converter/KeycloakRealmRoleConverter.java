@@ -17,8 +17,8 @@ public class KeycloakRealmRoleConverter implements Converter<Jwt, Mono<JwtAuthen
     @Override
     public Mono<JwtAuthenticationToken> convert(Jwt jwt) {
         List<GrantedAuthority> authorities = new ArrayList<>();
-        Object realmAccess = jwt.getClaim("realm_access");
-        if (realmAccess instanceof Map<?, ?> map && map.get("roles") instanceof Collection<?> roles) {
+        if (jwt.getClaim("realm_access") instanceof Map<?, ?> map
+                && map.get("roles") instanceof Collection<?> roles) {
             roles.forEach(role -> authorities.add(new SimpleGrantedAuthority("ROLE_" + role)));
         }
         return Mono.just(new JwtAuthenticationToken(jwt, authorities));

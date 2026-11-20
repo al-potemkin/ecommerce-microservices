@@ -9,8 +9,10 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 
-@JsonPropertyOrder({"type", "title", "status", "detail", "instance",
-        "code", "timestamp", "traceId", "source", "errors"})
+@JsonPropertyOrder({
+        "type", "title", "status", "detail", "instance",
+        "code", "timestamp", "traceId", "source", "errors"
+})
 public class ApiProblem extends ProblemDetail {
 
     private final String code;
@@ -42,7 +44,7 @@ public class ApiProblem extends ProblemDetail {
         return timestamp;
     }
 
-    @JsonInclude(JsonInclude.Include.ALWAYS)   // иначе null исчезнет из ответа
+    @JsonInclude(JsonInclude.Include.ALWAYS)
     public String getTraceId() {
         return traceId;
     }
@@ -51,7 +53,7 @@ public class ApiProblem extends ProblemDetail {
         return source;
     }
 
-    @JsonInclude(JsonInclude.Include.ALWAYS)   // иначе пустой список исчезнет из ответа
+    @JsonInclude(JsonInclude.Include.ALWAYS)
     public List<FieldError> getErrors() {
         return errors;
     }

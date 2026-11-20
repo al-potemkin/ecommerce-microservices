@@ -7,7 +7,7 @@ services:
       ORDER_SERVICE_URL: http://order-stub:8080
       INVENTORY_SERVICE_URL: http://inventory-stub:8080
       KEYCLOAK_ISSUER_URI: http://localhost:8180/realms/ecommerce
-      KEYCLOAK_JWK_SET_URI: http://keycloak:8080/realms/ecommerce/protocol/openid-connect/certs
+      SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI: http://keycloak:8080/realms/ecommerce/protocol/openid-connect/certs
       REDIS_HOST: redis
       REDIS_PASSWORD: ${REDIS_PASSWORD}
     ports:
@@ -29,6 +29,12 @@ services:
       KC_DB_USERNAME: ${KC_DB_USER}
       KC_DB_PASSWORD: ${KC_DB_PASSWORD}
       TEST_USER_PASSWORD: ${TEST_USER_PASSWORD}
+      NOTIFICATION_SERVICE_SECRET: ${NOTIFICATION_SERVICE_SECRET}
+      PRODUCT_SERVICE_SECRET: ${PRODUCT_SERVICE_SECRET}
+      ORDER_SERVICE_SECRET: ${ORDER_SERVICE_SECRET}
+      INVENTORY_SERVICE_SECRET: ${INVENTORY_SERVICE_SECRET}
+      ANALYTICS_SERVICE_SECRET: ${ANALYTICS_SERVICE_SECRET}
+      DLT_PROCESSOR_SERVICE_SECRET: ${DLT_PROCESSOR_SERVICE_SECRET}
     ports:
       - "127.0.0.1:8180:8080"
     networks: [ backend, edge ]
@@ -68,17 +74,6 @@ services:
       interval: 5s
       timeout: 3s
       retries: 10
-
-  # заглушки сервисов
-  product-stub:
-    image: mendhak/http-https-echo
-    networks: [ backend ]
-  order-stub:
-    image: mendhak/http-https-echo
-    networks: [ backend ]
-  inventory-stub:
-    image: mendhak/http-https-echo
-    networks: [ backend ]
 
 networks:
   backend:

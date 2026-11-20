@@ -39,7 +39,7 @@ public enum ErrorCode {
     }
 
     /**
-     * unauthorized, service-unavailable... для поля type
+     * unauthorized, service-unavailable... type field
      */
     public String slug() {
         return name().toLowerCase(Locale.ROOT).replace('_', '-');

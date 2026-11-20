@@ -1,0 +1,15 @@
+services:
+  api-gateway:
+    environment:
+      SPRING_PROFILES_ACTIVE: dev
+
+  # Service stubs
+  product-stub:
+    image: mendhak/http-https-echo
+    networks: [ backend ]
+  order-stub:
+    image: mendhak/http-https-echo
+    networks: [ backend ]
+  inventory-stub:
+    image: mendhak/http-https-echo
+    networks: [ backend ]

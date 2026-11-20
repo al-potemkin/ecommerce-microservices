@@ -13,16 +13,14 @@ import reactor.core.publisher.Mono;
 
 @RestController
 public class FallbackController {
-
     private static final Logger log = LoggerFactory.getLogger(FallbackController.class);
-
     private final ErrorResponder errors;
 
     public FallbackController(ErrorResponder errors) {
         this.errors = errors;
     }
 
-    @RequestMapping("/fallback/{service}")   // без метода: forward сохраняет GET/POST/...
+    @RequestMapping("/fallback/{service}")
     public Mono<Void> fallback(ServerWebExchange exchange, @PathVariable String service) {
         log.warn("Circuit breaker fallback for {}", service);
         exchange.getResponse().getHeaders().set(HttpHeaders.RETRY_AFTER, "10");

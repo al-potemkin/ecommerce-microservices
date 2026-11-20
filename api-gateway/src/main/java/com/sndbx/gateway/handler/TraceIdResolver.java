@@ -18,7 +18,6 @@ public class TraceIdResolver {
     }
 
     public String resolve(ServerWebExchange exchange) {
-        // 1) контекст наблюдения текущего запроса: не зависит от потока выполнения
         String fromObservation = ServerRequestObservationContext.findCurrent(exchange.getAttributes())
                 .map(ctx -> ctx.<TracingObservationHandler.TracingContext>get(
                         TracingObservationHandler.TracingContext.class))
@@ -28,7 +27,7 @@ public class TraceIdResolver {
         if (fromObservation != null) {
             return fromObservation;
         }
-        // 2) запасной вариант: текущий span (при spring.reactor.context-propagation=auto)
+
         Tracer t = tracer.getIfAvailable();
         Span span = t != null ? t.currentSpan() : null;
         return span != null ? span.context().traceId() : null;

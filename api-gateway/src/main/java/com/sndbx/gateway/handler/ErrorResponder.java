@@ -19,7 +19,6 @@ import java.util.Set;
 
 @Component
 public class ErrorResponder {
-
     private final ServerResponse.Context context;
     private final TraceIdResolver traceIds;
     private final String typeBaseUri;
@@ -27,7 +26,7 @@ public class ErrorResponder {
 
     public ErrorResponder(ServerCodecConfigurer codecs,
                           TraceIdResolver traceIds,
-                          @Value("${app.errors.type-base-uri:https://api.example.com/problems}") String typeBaseUri,
+                          @Value("${app.errors.type-base-uri}") String typeBaseUri,
                           @Value("${spring.application.name}") String source) {
         this.context = new ServerResponse.Context() {
             @Override
@@ -40,6 +39,7 @@ public class ErrorResponder {
                 return List.of();
             }
         };
+
         this.traceIds = traceIds;
         this.typeBaseUri = typeBaseUri;
         this.source = source;
@@ -49,10 +49,8 @@ public class ErrorResponder {
         return write(exchange, code, code.defaultDetail(), List.of());
     }
 
-    public Mono<Void> write(ServerWebExchange exchange, ErrorCode code,
-                            String detail, List<ApiProblem.FieldError> errors) {
-        ApiProblem body = new ApiProblem(code, detail, typeBaseUri,
-                instance(exchange), traceIds.resolve(exchange), source, errors);
+    public Mono<Void> write(ServerWebExchange exchange, ErrorCode code, String detail, List<ApiProblem.FieldError> errors) {
+        ApiProblem body = new ApiProblem(code, detail, typeBaseUri, instance(exchange), traceIds.resolve(exchange), source, errors);
 
         return ServerResponse.status(code.status())
                 .contentType(MediaType.APPLICATION_PROBLEM_JSON)
@@ -61,11 +59,10 @@ public class ErrorResponder {
     }
 
     /**
-     * Исходный путь запроса без query-строки (после forward на fallback путь меняется).
+     * The original path of the request without the query line (after forward to fallback the path changes).
      */
     private String instance(ServerWebExchange exchange) {
-        Set<URI> originals = exchange.getAttributeOrDefault(
-                ServerWebExchangeUtils.GATEWAY_ORIGINAL_REQUEST_URL_ATTR, Set.<URI>of());
+        Set<URI> originals = exchange.getAttributeOrDefault(ServerWebExchangeUtils.GATEWAY_ORIGINAL_REQUEST_URL_ATTR, Set.of());
         URI uri = originals.isEmpty() ? exchange.getRequest().getURI() : originals.iterator().next();
         String path = uri.getRawPath();
         return (path == null || path.isEmpty()) ? "/" : path;
