@@ -1,48 +1,49 @@
 # api-gateway
 
-Единая точка входа для клиентов e-commerce системы. Скрывает внутренние сервисы, проверяет JWT от Keycloak, ограничивает частоту запросов, защищает от каскадных сбоев и отдаёт ошибки в едином формате.
+The single entry point for clients of the e-commerce system. It hides the internal services, validates JWTs issued by Keycloak, rate-limits requests, protects against cascading failures, and returns errors in a unified format.
 
-## Возможности
+## Features
 
-- Маршрутизация запросов в `product-service`, `order-service` и `inventory-service`.
-- Проверка JWT (подпись, срок действия, издатель) и ролей до передачи запроса сервису.
-- Белый список публичных путей: чтение каталога и health.
-- Передача исходного токена и сквозного `traceparent` в сервисы.
-- Circuit breaker и таймауты.
-- Ограничение частоты запросов: на пользователя (по `sub` токена) и на IP, счётчики в Redis.
-- CORS для фронтенда.
-- Единый формат ошибок на базе RFC 9457 (Problem Details).
-- Документация OpenAPI всех сервисов в одном Swagger UI (только в профиле `dev`).
+- Routing requests to `product-service`, `order-service` and `inventory-service`.
+- JWT validation (signature, expiration, issuer) and role checks before a request reaches a service.
+- Allow-list of public paths: reading the product catalog and health.
+- Forwarding the original token and the end-to-end `traceparent` to the services.
+- Circuit breaker and timeouts.
+- Rate limiting per user (by the token's `sub`) and per IP, with counters in Redis.
+- CORS for the frontend.
+- Unified error format based on RFC 9457 (Problem Details).
+- OpenAPI documentation of all services in a single Swagger UI (`dev` profile only).
 
-**Стек:** Java 21, Spring Boot 4 (Spring Framework 7), Spring Cloud Gateway (WebFlux), Spring Security OAuth2 Resource Server, Resilience4j, Reactive Redis (Lettuce), Micrometer Tracing (OpenTelemetry), springdoc-openapi (dev).
+**Stack:** Java 21, Spring Boot 4, Spring Cloud Gateway, Spring Security OAuth2 Resource Server, Resilience4j, Reactive Redis, Micrometer Tracing, springdoc-openapi.
 
-## Как обрабатывается запрос
+## Request flow
 
-1. `IpRateLimitFilter` (приоритет выше Spring Security) считает запросы по IP в Redis. Он видит и анонимные запросы, и несуществующие пути, и preflight.
-2. Spring Security проверяет токен и права по правилам из таблицы ниже.
-3. Gateway находит маршрут. Для маршрутов действуют фильтры по умолчанию: `DedupeResponseHeader` и `RequestRateLimiter` (лимит на пользователя).
-4. Фильтр `CircuitBreaker` пересылает запрос сервису с таймаутами. При сбое запрос уходит на `/fallback/{service}`.
-5. Любая ошибка шлюза формируется через один `ErrorResponder` в формате `ApiProblem`.
+1. `IpRateLimitFilter` (runs before Spring Security) counts requests per IP in Redis. It sees anonymous requests, nonexistent paths and preflight requests as well.
+2. Spring Security validates the token and permissions using the rules in the table below.
+3. The gateway finds the route. Default filters apply to every route: `DedupeResponseHeader` and `RequestRateLimiter` (per-user limit).
+4. The `CircuitBreaker` filter forwards the request to the service, applying timeouts. On failure the request is redirected to `/fallback/{service}`.
+5. Every gateway error is built by a single `ErrorResponder` in the `ApiProblem` format.
 
-## Маршруты и доступ
+## Routes and access
 
-| Путь | Метод | Доступ |
+| Path | Method | Access |
 |---|---|---|
-| `/api/products/**` | GET | публично, без токена |
-| `/api/products/**` | остальные | роль `PRODUCT_MANAGER` |
-| `/api/orders/**` | любой | любой валидный токен |
-| `/api/inventory/**` | любой | роль `INVENTORY_MANAGER` |
-| `/actuator/health/**` | GET | публично |
-| `/actuator/**` (прочее) | любой | валидный токен, и только если эндпоинт опубликован (в `dev`) |
-| любой метод `OPTIONS` | OPTIONS | публично (preflight CORS, ответ даёт сам шлюз) |
-| `/swagger-ui/**`, `/v3/api-docs/**`, `/aggregate/**` | GET | публично, **только в `dev`** |
-| всё остальное | любой | валидный токен |
+| `/api/products/**` | GET | public, no token |
+| `/api/products/**` | others | role `PRODUCT_MANAGER` |
+| `/api/orders/**` | any | any valid token |
+| `/api/inventory/**` | any | role `INVENTORY_MANAGER` |
+| `/actuator/health/**` | GET | public |
+| `/actuator/**` (other endpoints) | any | valid token, and only if the endpoint is exposed (`dev`) |
+| any `OPTIONS` request | OPTIONS | public (CORS preflight, answered by the gateway itself) |
+| `/swagger-ui/**`, `/v3/api-docs/**`, `/aggregate/**` | GET | public, **`dev` only** |
+| everything else | any | valid token |
 
-Правила проверяются сверху вниз, побеждает первое совпавшее, поэтому публичные пути идут первыми, а последнее правило закрывает всё остальное. Покупатель видит каталог активных товаров, но не остатки: остатки живут в `inventory-service`, и доступ к нему только у менеджера склада.
+Rules are evaluated top to bottom and the first match wins, so public paths come first and the last rule locks down everything else. A customer can see the catalog of active products but not the stock: stock lives in `inventory-service`, which only the warehouse manager can access.
 
-Запрос без токена к несуществующему пути получает 401, а не 404: безопасность срабатывает раньше маршрутизации, посторонний не узнаёт, какие пути существуют.
+> A request without a token to a nonexistent path gets 401, not 404: security runs before routing, so an outsider cannot discover which paths exist.
 
-## Формат ошибок
+## Error format
+
 ```json
 {
   "type": "https://api.example.com/problems/unauthorized",
@@ -58,45 +59,52 @@
 }
 ```
 
-| Поле | Назначение |
+| Field | Purpose |
 |---|---|
-| `type` | идентификатор типа ошибки |
-| `title` | краткое название |
-| `status` | HTTP-код |
-| `detail` | безопасное описание |
-| `instance` | исходный путь запроса без query-строки |
-| `code` | машинный код |
-| `timestamp` | время в UTC, ISO-8601 |
-| `traceId` | идентификатор для поиска запроса в логах |
-| `source` | сервис, сформировавший ошибку |
-| `errors` | ошибки валидации `[field, message]` |
+| `type` | error type identifier |
+| `title` | short title |
+| `status` | HTTP status code |
+| `detail` | safe description |
+| `instance` | original request path without the query string |
+| `code` | machine-readable code |
+| `timestamp` | time in UTC, ISO-8601 |
+| `traceId` | identifier for finding the request in the logs |
+| `source` | the service that produced the error |
+| `errors` | validation errors `[field, message]` |
 
-Заголовки лимитера на пользователя: `X-RateLimit-Remaining`, `X-RateLimit-Burst-Capacity`, `X-RateLimit-Replenish-Rate`. Значение `Remaining: -1` означает, что Redis недоступен и запрос пропущен без подсчёта.
+## Rate limit headers
+
+The per-user limiter adds `X-RateLimit-Remaining`, `X-RateLimit-Burst-Capacity` and `X-RateLimit-Replenish-Rate` to responses.
 
 ## Keycloak
 
-Realm `ecommerce` создаётся импортом из `keycloak/import/ecommerce-realm.json` при старте контейнера (`--import-realm`).
+The `ecommerce` realm is created by importing `keycloak/import/ecommerce-realm.json` when the container starts.
 
-- **Важно:** импорт срабатывает только на пустой базе. Чтобы применить изменения файла, пересоздайте окружение: `docker compose down -v`, затем `docker compose up -d` (данные Keycloak будут удалены).
-- **Роли:** `PRODUCT_MANAGER` (product-service), `INVENTORY_MANAGER` (inventory-service), `INTERNAL_SERVICE` (вызовы между сервисами без пользователя).
-- **Клиенты:**
-    - `ecommerce-web`: публичный клиент фронтенда, Authorization Code + PKCE (S256), регистрация и вход через страницу Keycloak.
-    - `ecommerce-dev`: получение токена по логину и паролю через curl. Только для разработки, перед реальным использованием удалить.
-    - клиенты сервисов (`notification-service`, `product-service`, `order-service`, `inventory-service`, `analytics-service`, `dlt-processor-service`): client credentials, у каждого свой секрет и роль `INTERNAL_SERVICE`.
-- **Токены:** access token живёт 5 минут; refresh token с ротацией (старый после обмена недействителен), поэтому украденный refresh token можно использовать один раз. Токен сервисного аккаунта выдаётся без refresh token, сервис просто запрашивает новый.
-- **Тестовые пользователи:** `testuser` (обе менеджерские роли), `productuser` (`PRODUCT_MANAGER`), `inventoryuser` (`INVENTORY_MANAGER`). Пароль берётся из `TEST_USER_PASSWORD`.
+> The import only runs on an empty database. To apply changes to the file, recreate the environment: `docker compose down -v`, then `docker compose up -d` (Keycloak data will be deleted).
 
-## Запуск
-```bash
+- **Roles:** `PRODUCT_MANAGER` (product-service), `INVENTORY_MANAGER` (inventory-service), `INTERNAL_SERVICE` (calls between services).
+- **Clients:**
+  - `ecommerce-web`: public frontend client, Authorization Code + PKCE (S256); sign-up and sign-in happen on the Keycloak page.
+  - `ecommerce-dev`: obtains a token by username and password via curl. For development only.
+  - service clients (`notification-service`, `product-service`, `order-service`, `inventory-service`, `analytics-service`, `dlt-processor-service`): client credentials, each with its own secret and the `INTERNAL_SERVICE` role.
+- **Tokens:** the access token lives for 5 minutes; refresh tokens are rotated, so the old one becomes invalid after it is exchanged. A service account token is issued without a refresh token.
+- **Test users:** `testuser` (both manager roles), `productuser` (`PRODUCT_MANAGER`), `inventoryuser` (`INVENTORY_MANAGER`).
+
+## Running
+
+```docker
 docker compose up -d --build
 
-docker compose up -d --build api-gateway #пересборка
+# rebuild only the gateway
+docker compose up -d --build api-gateway
 
-docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d --build api-gateway #dev
+# dev profile
+docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d --build api-gateway
 ```
 
-Получение токена (живёт 5 минут):
-```http request
+Getting a token:
+
+```bash
 curl -X POST 'http://localhost:8180/realms/ecommerce/protocol/openid-connect/token' \
 --data 'grant_type=password' \
 --data 'client_id=ecommerce-dev' \
