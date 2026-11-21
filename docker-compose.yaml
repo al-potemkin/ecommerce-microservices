@@ -1,142 +1,153 @@
-  services:
-    postgres-inventory:
-      # Будем использовать PostgreSQL
-      image: postgres:14
-      # Имя контейнера
-      container_name: postgres-inventory
-      # hostname контейнера
-      hostname: postgres-inventory
-      # Пробрасываем порты
-      ports:
-        - "5432:5432"
-      environment:
-        # Юзер
-        POSTGRES_USER: postgres
-        # Пароль
-        POSTGRES_PASSWORD: postgres
-        # Стартовая база данных
-        POSTGRES_DB: inventory_db
+services:
+  api-gateway:
+    build: ./api-gateway
+    restart: unless-stopped
+    environment:
+      PRODUCT_SERVICE_URL: http://product-service:8081
+      ORDER_SERVICE_URL: http://order-stub:8080
+      INVENTORY_SERVICE_URL: http://inventory-stub:8080
+      KEYCLOAK_ISSUER_URI: http://localhost:8180/realms/ecommerce
+      SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI: http://keycloak:8080/realms/ecommerce/protocol/openid-connect/certs
+      REDIS_HOST: redis
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+    ports:
+      - "8080:8080"
+    networks: [ backend, edge ]
+    depends_on:
+      redis:
+        condition: service_healthy
 
-    postgres-notification:
-      image: postgres:14
-      container_name: postgres-notification
-      hostname: postgres-notification
-      ports:
-        - "5433:5432"
-      environment:
-        POSTGRES_USER: postgres
-        POSTGRES_PASSWORD: postgres
-        POSTGRES_DB: notification_db
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.0
+    restart: unless-stopped
+    command: [ "start-dev", "--import-realm" ]
+    environment:
+      KC_BOOTSTRAP_ADMIN_USERNAME: ${KC_ADMIN_USER}
+      KC_BOOTSTRAP_ADMIN_PASSWORD: ${KC_ADMIN_PASSWORD}
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://keycloak-db:5432/${KC_DB_NAME}
+      KC_DB_USERNAME: ${KC_DB_USER}
+      KC_DB_PASSWORD: ${KC_DB_PASSWORD}
+      TEST_USER_PASSWORD: ${TEST_USER_PASSWORD}
+      NOTIFICATION_SERVICE_SECRET: ${NOTIFICATION_SERVICE_SECRET}
+      PRODUCT_SERVICE_SECRET: ${PRODUCT_SERVICE_SECRET}
+      ORDER_SERVICE_SECRET: ${ORDER_SERVICE_SECRET}
+      INVENTORY_SERVICE_SECRET: ${INVENTORY_SERVICE_SECRET}
+      ANALYTICS_SERVICE_SECRET: ${ANALYTICS_SERVICE_SECRET}
+      DLT_PROCESSOR_SERVICE_SECRET: ${DLT_PROCESSOR_SERVICE_SECRET}
+    ports:
+      - "127.0.0.1:8180:8080"
+    networks: [ backend, edge ]
+    volumes:
+      - ./api-gateway/keycloak:/opt/keycloak/data/import
+    depends_on:
+      keycloak-db:
+        condition: service_healthy
 
-    kafka-0:
-      # Будем использовать данный образ
-      image: confluentinc/cp-kafka:8.4.0
-      # Имя контейнера
-      container_name: kafka-0
-      # hostname контейнера
-      hostname: kafka-0
-      # Пробрасываем порты, чтоб слать в Kafka сообщения с хоста
-      ports:
-        - "29092:29092"
-      environment:
-        # Уникальный ID кластера в формате UUID
-        # Можно сгенерировать через команду
-        # docker run confluentinc/cp-kafka:8.1.0 kafka-storage random-uuid
-        CLUSTER_ID: ZETVJENWRjaECDUEExP_eg
-        # Уникальный ID ноды внутри кластера
-        KAFKA_NODE_ID: 0
-        # Нода и контроллер, и брокер
-        KAFKA_PROCESS_ROLES: broker,controller
-        # "Слушатели" используются для указания способа подключения к Kafka ноде,
-        # То есть Kafka откроет порты и будет слушать на них подключения
-        # В нашем случае первое слово - Alias, ://: - на всех сетевых интерфейсах,
-        # Ну и в конце, очевидно, порт
-        KAFKA_LISTENERS: INTERNAL://:9091,EXTERNAL://:29092,CONTROLLER://:9093
-        # Перечисляем список нод, которые являются контроллерами в формате
-        # [NodeID]@[Hostname]:[Port]
-        KAFKA_CONTROLLER_QUORUM_VOTERS: 0@kafka-0:9093,1@kafka-1:9093,2@kafka-2:9093
-        # Здесь мы указываем, куда Kafka будет "перенаправлять" клиента после того,
-        # Как тот подключится к ней. Контроллер не указываем, так как это нужно
-        # Только для внутренней работы Kafka
-        KAFKA_ADVERTISED_LISTENERS: INTERNAL://kafka-0:9091,EXTERNAL://localhost:29092
-        # Настраиваем шифрование
-        # В нашем случае PLAINTEXT означает его отсутствие
-        KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INTERNAL:PLAINTEXT,EXTERNAL:PLAINTEXT,CONTROLLER:PLAINTEXT
-        # Указываем, что для контроллера используется "Слушатель" CONTROLLER
-        KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
-        # Указываем, что для брокеров используется "Слушатель" INTERNAL
-        KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
+  keycloak-db:
+    image: postgres:16
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${KC_DB_NAME}
+      POSTGRES_USER: ${KC_DB_USER}
+      POSTGRES_PASSWORD: ${KC_DB_PASSWORD}
+    volumes:
+      - keycloak-db-data:/var/lib/postgresql/data
+    networks: [ backend ]
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}" ]
+      interval: 5s
+      timeout: 3s
+      retries: 10
 
-    kafka-1:
-      image: confluentinc/cp-kafka:8.4.0
-      container_name: kafka-1
-      hostname: kafka-1
-      ports:
-        - "29093:29092"
-      environment:
-        CLUSTER_ID: ZETVJENWRjaECDUEExP_eg
-        KAFKA_NODE_ID: 1
-        KAFKA_PROCESS_ROLES: broker,controller
-        KAFKA_LISTENERS: INTERNAL://:9091,EXTERNAL://:29092,CONTROLLER://:9093
-        KAFKA_CONTROLLER_QUORUM_VOTERS: 0@kafka-0:9093,1@kafka-1:9093,2@kafka-2:9093
-        KAFKA_ADVERTISED_LISTENERS: INTERNAL://kafka-1:9091,EXTERNAL://localhost:29093
-        KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INTERNAL:PLAINTEXT,EXTERNAL:PLAINTEXT,CONTROLLER:PLAINTEXT
-        KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
-        KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
+  redis:
+    image: redis:7
+    restart: unless-stopped
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+    command: [ "sh", "-c", "exec redis-server --requirepass \"$$REDIS_PASSWORD\"" ]
+    ports:
+      - "127.0.0.1:6379:6379"
+    networks: [ backend ]
+    healthcheck:
+      test: [ "CMD-SHELL", "redis-cli -a \"$$REDIS_PASSWORD\" --no-auth-warning ping | grep -q PONG" ]
+      interval: 5s
+      timeout: 3s
+      retries: 10
 
-    kafka-2:
-      image: confluentinc/cp-kafka:8.4.0
-      container_name: kafka-2
-      hostname: kafka-2
-      ports:
-        - "29094:29092"
-      environment:
-        CLUSTER_ID: ZETVJENWRjaECDUEExP_eg
-        KAFKA_NODE_ID: 2
-        KAFKA_PROCESS_ROLES: broker,controller
-        KAFKA_LISTENERS: INTERNAL://:9091,EXTERNAL://:29092,CONTROLLER://:9093
-        KAFKA_CONTROLLER_QUORUM_VOTERS: 0@kafka-0:9093,1@kafka-1:9093,2@kafka-2:9093
-        KAFKA_ADVERTISED_LISTENERS: INTERNAL://kafka-2:9091,EXTERNAL://localhost:29094
-        KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INTERNAL:PLAINTEXT,EXTERNAL:PLAINTEXT,CONTROLLER:PLAINTEXT
-        KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
-        KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
+  # ---------- product-service ----------
+  product-service:
+    build:
+      context: ./product-service
+      dockerfile: Dockerfile
+    container_name: product-service
+    restart: unless-stopped
+    depends_on:
+      product-mongo:
+        condition: service_healthy
+      product-redis:
+        condition: service_healthy
+    environment:
+      SERVER_PORT: 8081
+      MONGODB_HOST: product-mongo
+      MONGODB_PORT: 27017
+      PRODUCT_DB_NAME: ${PRODUCT_DB_NAME}
+      PRODUCT_DB_USER: ${PRODUCT_DB_USER}
+      PRODUCT_DB_PASSWORD: ${PRODUCT_DB_PASSWORD}
+      REDIS_HOST: product-redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: ${PRODUCT_REDIS_PASSWORD}
+    ports:
+      - "127.0.0.1:8081:8081"
+    networks: [ backend, edge ]
 
-    kafka-ui:
-      image: provectuslabs/kafka-ui:v0.7.2
-      container_name: kafka-ui
-      hostname: kafka-ui
-      depends_on:
-        - kafka-0
-        - kafka-1
-        - kafka-2
-        - schema-registry # Теперь есть зависимость от реестра
-      ports:
-        - "8086:8080"
-      environment:
-        # Название кластера в веб-интерфейсе
-        KAFKA_CLUSTERS_0_NAME: local
-        # Указываем адреса наших брокеров в кластере
-        # так как Kafka-UI и брокеры в одной Docker-сети, то используем порты 9091
-        KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka-0:9091,kafka-1:9091,kafka-2:9091
-        # Настройка для динамической конфигурации брокеров через UI
-        DYNAMIC_CONFIG_ENABLED: true
-        # Указываем адрес ресстра для того, чтобы Kafka-UI его подхватила
-        KAFKA_CLUSTERS_0_SCHEMAREGISTRY: http://schema-registry:8081
+  product-mongo:
+    image: mongo:7
+    container_name: product-mongo
+    restart: unless-stopped
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_ROOT_USER}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD}
+      PRODUCT_DB_NAME: ${PRODUCT_DB_NAME}
+      PRODUCT_DB_USER: ${PRODUCT_DB_USER}
+      PRODUCT_DB_PASSWORD: ${PRODUCT_DB_PASSWORD}
+    ports:
+      - "127.0.0.1:27017:27017"
+    networks: [ backend, edge ]
+    volumes:
+      - product-mongo-data:/data/db
+      - ./product-service/docker/mongo/init-mongo.js:/docker-entrypoint-initdb.d/init-mongo.js:ro
+    healthcheck:
+      test: [ "CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping').ok" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
 
-    schema-registry:
-      image: confluentinc/cp-schema-registry:8.4.0
-      container_name: schema-registry
-      hostname: schema-registry
-      depends_on:
-        - kafka-0
-        - kafka-1
-        - kafka-2
-      ports:
-        - "8087:8081"
-      environment:
-        # Адреса нод кластера (реестр хранит схемы в специальном топике)
-        SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS: kafka-0:9091,kafka-1:9091,kafka-2:9091
-        # Имя хоста (об этой переменной окружения мы подробнее поговорим ниже)
-        SCHEMA_REGISTRY_HOST_NAME: schema-registry
-        # Слушаем на 8081 порту на всех сетевых интерфейсах
-        SCHEMA_REGISTRY_LISTENERS: http://0.0.0.0:8081
+  product-redis:
+    image: redis:7-alpine
+    container_name: product-redis
+    restart: unless-stopped
+    environment:
+      REDIS_PASSWORD: ${PRODUCT_REDIS_PASSWORD}
+    command:
+      - sh
+      - -c
+      - exec redis-server --requirepass "$$REDIS_PASSWORD" --maxmemory 128mb --maxmemory-policy allkeys-lru --save "" --appendonly no
+    ports:
+      - "127.0.0.1:6380:6379"
+    networks: [ backend, edge ]
+    healthcheck:
+      test: [ "CMD-SHELL", "redis-cli -a \"$$REDIS_PASSWORD\" --no-auth-warning ping | grep -q PONG" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+networks:
+  backend:
+    internal: true
+  edge:
+
+volumes:
+  keycloak-db-data:
+  product-mongo-data:

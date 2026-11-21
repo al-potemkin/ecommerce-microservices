@@ -21,12 +21,10 @@ import java.util.Set;
 public class ErrorResponder {
     private final ServerResponse.Context context;
     private final TraceIdResolver traceIds;
-    private final String typeBaseUri;
     private final String source;
 
     public ErrorResponder(ServerCodecConfigurer codecs,
                           TraceIdResolver traceIds,
-                          @Value("${app.errors.type-base-uri}") String typeBaseUri,
                           @Value("${spring.application.name}") String source) {
         this.context = new ServerResponse.Context() {
             @Override
@@ -41,7 +39,6 @@ public class ErrorResponder {
         };
 
         this.traceIds = traceIds;
-        this.typeBaseUri = typeBaseUri;
         this.source = source;
     }
 
@@ -50,7 +47,7 @@ public class ErrorResponder {
     }
 
     public Mono<Void> write(ServerWebExchange exchange, ErrorCode code, String detail, List<ApiProblem.FieldError> errors) {
-        ApiProblem body = new ApiProblem(code, detail, typeBaseUri, instance(exchange), traceIds.resolve(exchange), source, errors);
+        ApiProblem body = new ApiProblem(code, detail, instance(exchange), traceIds.resolve(exchange), source, errors);
 
         return ServerResponse.status(code.status())
                 .contentType(MediaType.APPLICATION_PROBLEM_JSON)

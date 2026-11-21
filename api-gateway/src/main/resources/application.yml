@@ -75,6 +75,14 @@ spring:
 
 
 management:
+  otlp:
+    metrics:
+      export:
+        enabled: false
+    tracing:
+      export:
+        otlp:
+          enabled: false
   endpoints:
     web:
       exposure:

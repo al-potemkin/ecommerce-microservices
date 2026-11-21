@@ -46,7 +46,6 @@ Rules are evaluated top to bottom and the first match wins, so public paths come
 
 ```json
 {
-  "type": "https://api.example.com/problems/unauthorized",
   "title": "Unauthorized",
   "status": 401,
   "detail": "Authentication is required to access this resource",
@@ -61,7 +60,6 @@ Rules are evaluated top to bottom and the first match wins, so public paths come
 
 | Field | Purpose |
 |---|---|
-| `type` | error type identifier |
 | `title` | short title |
 | `status` | HTTP status code |
 | `detail` | safe description |

@@ -11,7 +11,9 @@ import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 @Getter @Setter
 @Document(collection = "products")
@@ -31,10 +33,10 @@ public class Product {
     private Gender gender;
 
     @Indexed
-    private List<ScentFamily> scentFamilies = new ArrayList<>();
+    private Set<ScentFamily> scentFamilies = new HashSet<>();
 
-    private String mainImage;                          // для каталога
-    private List<String> gallery = new ArrayList<>();  // карусель в карточке
+    private String mainImage;
+    private List<String> gallery = new ArrayList<>();
 
     private List<Variant> variants = new ArrayList<>();
 

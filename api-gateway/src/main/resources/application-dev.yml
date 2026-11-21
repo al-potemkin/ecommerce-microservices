@@ -19,8 +19,8 @@ spring:
           observability:
             enabled: true
           httpclient:
-            connect-timeout: 2000      # мс на установку соединения
-            response-timeout: 5s       # ожидание ответа
+            connect-timeout: 2000
+            response-timeout: 5s
           routes:
             - id: product-service
               uri: ${PRODUCT_SERVICE_URL}

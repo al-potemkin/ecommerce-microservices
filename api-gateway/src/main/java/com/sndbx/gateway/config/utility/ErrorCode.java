@@ -2,8 +2,6 @@ package com.sndbx.gateway.config.utility;
 
 import org.springframework.http.HttpStatus;
 
-import java.util.Locale;
-
 public enum ErrorCode {
     BAD_REQUEST(HttpStatus.BAD_REQUEST, "Bad Request", "The request is invalid"),
     UNAUTHORIZED(HttpStatus.UNAUTHORIZED, "Unauthorized", "Authentication is required to access this resource"),
@@ -36,13 +34,6 @@ public enum ErrorCode {
 
     public String defaultDetail() {
         return defaultDetail;
-    }
-
-    /**
-     * unauthorized, service-unavailable... type field
-     */
-    public String slug() {
-        return name().toLowerCase(Locale.ROOT).replace('_', '-');
     }
 
     public static ErrorCode fromStatus(int status) {

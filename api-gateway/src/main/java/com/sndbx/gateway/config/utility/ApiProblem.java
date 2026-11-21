@@ -10,7 +10,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.List;
 
 @JsonPropertyOrder({
-        "type", "title", "status", "detail", "instance",
+        "title", "status", "detail", "instance",
         "code", "timestamp", "traceId", "source", "errors"
 })
 public class ApiProblem extends ProblemDetail {
@@ -21,11 +21,10 @@ public class ApiProblem extends ProblemDetail {
     private final String source;
     private final List<FieldError> errors;
 
-    public ApiProblem(ErrorCode errorCode, String detail, String typeBaseUri,
+    public ApiProblem(ErrorCode errorCode, String detail,
                       String instance, String traceId, String source,
                       List<FieldError> errors) {
         super(errorCode.status().value());
-        setType(URI.create(typeBaseUri + "/" + errorCode.slug()));
         setTitle(errorCode.title());
         setDetail(detail);
         setInstance(toUri(instance));
