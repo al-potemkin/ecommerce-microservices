@@ -28,14 +28,14 @@ public class SecurityConfig {
 
         return http
                 .csrf(ServerHttpSecurity.CsrfSpec::disable)
-                .authorizeExchange(ex -> ex
+                .authorizeExchange(auth -> auth
                         .pathMatchers(HttpMethod.OPTIONS).permitAll()
                         .pathMatchers("/actuator/health/**").permitAll()
                         .pathMatchers(HttpMethod.GET, "/api/products/**").permitAll()
                         .pathMatchers("/api/products/**").hasRole("PRODUCT_MANAGER")
                         .pathMatchers("/api/inventory/**").hasRole("INVENTORY_MANAGER")
                         .anyExchange().authenticated())
-                .oauth2ResourceServer(oauth2 -> oauth2
+                .oauth2ResourceServer(oauth -> oauth
                         .authenticationEntryPoint(unauthorized)
                         .accessDeniedHandler(forbidden)
                         .jwt(jwt -> jwt.jwtAuthenticationConverter(new KeycloakRealmRoleConverter())))

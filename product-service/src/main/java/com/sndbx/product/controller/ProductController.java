@@ -11,6 +11,7 @@ import com.sndbx.product.dto.response.PageResponse;
 import com.sndbx.product.dto.response.ProductResponse;
 import com.sndbx.product.service.CatalogService;
 import com.sndbx.product.service.ProductService;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -46,8 +47,9 @@ public class ProductController {
     }
 
     @GetMapping("/{id}")
-    public ProductResponse get(@PathVariable String id) {
-        return productService.get(id);
+    public ProductResponse get(@PathVariable String id, HttpServletRequest request) {
+        boolean manager = request.isUserInRole("PRODUCT_MANAGER");
+        return productService.get(id, manager);
     }
 
     @PutMapping("/{id}")

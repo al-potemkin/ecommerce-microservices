@@ -38,8 +38,20 @@ public class ProductService {
         return mapper.toResponse(repository.save(product));
     }
 
-    public ProductResponse get(String id) {
-        return mapper.toResponse(load(id));
+    public ProductResponse get(String id, boolean manager) {
+        Product product = load(id);
+        if (manager) {
+            return mapper.toResponse(product);
+        }
+
+        List<Variant> visibleVariants = product.getVariants().stream()
+                .filter(Variant::active)
+                .toList();
+        if (!product.isActive() || visibleVariants.isEmpty()) {
+            throw new ProductNotFoundException(id);
+        }
+        product.setVariants(visibleVariants);
+        return mapper.toResponse(product);
     }
 
     public ProductResponse update(String id, UpdateProductRequest request) {

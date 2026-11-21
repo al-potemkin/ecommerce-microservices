@@ -20,6 +20,8 @@ services:
       REDIS_HOST: product-redis
       REDIS_PORT: 6379
       REDIS_PASSWORD: ${REDIS_PASSWORD}
+      JWT_ISSUER_URI: http://localhost:8180/realms/ecommerce #KEYCLOAK_ISSUER_URI
+      SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI: http://keycloak:8080/realms/ecommerce/protocol/openid-connect/certs
     ports:
       - "127.0.0.1:8081:8081"
 
