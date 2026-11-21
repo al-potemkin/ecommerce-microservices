@@ -8,7 +8,7 @@ import java.math.BigDecimal;
 
 public record Variant(
         @Indexed(unique = true) String sku,
-        @Indexed int volumeMl,
-        @Indexed @Field(targetType = FieldType.DECIMAL128) BigDecimal price,
+        int volumeMl,
+        @Field(targetType = FieldType.DECIMAL128) BigDecimal price,
         boolean active) {
 }

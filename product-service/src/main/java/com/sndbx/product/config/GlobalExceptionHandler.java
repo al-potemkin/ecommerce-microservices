@@ -65,7 +65,8 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
                                                                   HttpStatusCode status,
                                                                   WebRequest request) {
         List<ApiProblem.FieldError> errors = ex.getBindingResult().getFieldErrors().stream()
-                .map(e -> new ApiProblem.FieldError(e.getField(), e.getDefaultMessage()))
+                .map(e -> new ApiProblem.FieldError(e.getField(),
+                        e.isBindingFailure() ? "Invalid value" : e.getDefaultMessage()))
                 .toList();
         return respond(problems.create(ErrorCode.VALIDATION_FAILED, null, servletRequest(request), errors));
     }
