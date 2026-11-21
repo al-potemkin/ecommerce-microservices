@@ -5,6 +5,7 @@ import com.sndbx.product.dto.request.CreateProductRequest;
 import com.sndbx.product.dto.request.UpdateProductRequest;
 import com.sndbx.product.dto.request.UpdateVariantRequest;
 import com.sndbx.product.dto.request.VariantRequest;
+import com.sndbx.product.dto.response.CatalogFacetsResponse;
 import com.sndbx.product.dto.response.CatalogItemResponse;
 import com.sndbx.product.dto.response.PageResponse;
 import com.sndbx.product.dto.response.ProductResponse;
@@ -85,5 +86,10 @@ public class ProductController {
     @GetMapping
     public PageResponse<CatalogItemResponse> list(@Valid CatalogFilter filter) {
         return catalogService.search(filter);
+    }
+
+    @GetMapping("/filters")
+    public CatalogFacetsResponse filters(@Valid CatalogFilter filter) {
+        return catalogService.facets(filter);
     }
 }

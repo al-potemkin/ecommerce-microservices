@@ -13,7 +13,7 @@ public interface InventoryClient {
     Logger log = LoggerFactory.getLogger(InventoryClient.class);
 
     @GetExchange("/check")
-//    @CircuitBreaker(name = "inventoryServiceCircuitBreaker", fallbackMethod = "fallbackMethod")
+    @CircuitBreaker(name = "inventoryServiceCircuitBreaker", fallbackMethod = "fallbackMethod")
     boolean isInStock(@RequestParam String productId, @RequestParam Integer quantity);
 
     default boolean fallbackMethod(Throwable throwable) {

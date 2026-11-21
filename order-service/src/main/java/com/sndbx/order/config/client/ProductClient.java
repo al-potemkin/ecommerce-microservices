@@ -14,7 +14,7 @@ public interface ProductClient {
     Logger log = LoggerFactory.getLogger(ProductClient.class);
 
     @GetExchange("/price/{id}")
-//    @CircuitBreaker(name = "productServiceCircuitBreaker", fallbackMethod = "fallbackMethod")
+    @CircuitBreaker(name = "productServiceCircuitBreaker", fallbackMethod = "fallbackMethod")
     BigDecimal getProductPriceById(@PathVariable String id);
 
     default BigDecimal fallbackMethod(Throwable throwable) {
