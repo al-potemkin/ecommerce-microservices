@@ -8,7 +8,7 @@ import com.sndbx.product.model.Product;
 import com.sndbx.product.model.Variant;
 import com.sndbx.product.model.outbox.OutboxEvent;
 import com.sndbx.product.model.outbox.OutboxStatus;
-import com.sndbx.product.model.outbox.ProductEvent;
+import com.sndbx.product.model.outbox.ProductEventPayload;
 import com.sndbx.product.model.outbox.ProductEventType;
 import com.sndbx.product.repository.OutboxRepository;
 import org.springframework.stereotype.Service;
@@ -28,7 +28,7 @@ public class OutboxRecorder {
 
     @Transactional(propagation = Propagation.MANDATORY)
     public void record(ProductEventType type, Product product, List<Variant> variants) {
-        ProductEvent event = new ProductEvent(
+        ProductEventPayload event = new ProductEventPayload(
                 UUID.randomUUID().toString(),
                 type,
                 Instant.now(),
@@ -36,7 +36,7 @@ public class OutboxRecorder {
                 product.getName(),
                 product.isActive(),
                 variants.stream()
-                        .map(v -> new ProductEvent.VariantSnapshot(v.sku(), v.volumeMl(), v.active()))
+                        .map(v -> new ProductEventPayload.VariantSnapshot(v.sku(), v.volumeMl(), v.active()))
                         .toList());
 
         repository.save(OutboxEvent.builder()

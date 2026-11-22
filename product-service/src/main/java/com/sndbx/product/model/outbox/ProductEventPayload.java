@@ -3,7 +3,7 @@ package com.sndbx.product.model.outbox;
 import java.time.Instant;
 import java.util.List;
 
-public record ProductEvent(
+public record ProductEventPayload(
         String eventId,
         ProductEventType type,
         Instant occurredAt,

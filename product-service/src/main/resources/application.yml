@@ -22,8 +22,12 @@ spring:
     bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS}
     producer:
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
-      value-serializer: org.apache.kafka.common.serialization.StringSerializer
-      acks: all
+      value-serializer: io.confluent.kafka.serializers.KafkaAvroSerializer
+      properties:
+        "[max.block.ms]": 5000
+        "[schema.registry.url]": ${SCHEMA_REGISTRY_URL}
+        "[auto.register.schemas]": true
+        "[avro.remove.java.properties]": true
 
 management:
   otlp:
@@ -34,3 +38,7 @@ management:
     export:
       otlp:
         enabled: false
+
+app:
+  outbox:
+    poll-delay-ms: 1000
