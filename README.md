@@ -4,6 +4,8 @@
 3. Вынести общие классы в отдельный артефакт
 4. трасировка логов сквозь сервисы
 5. inventory-schema продукты со sku, что неизвестны product-service Должны лететь в dlt
+6. swagger в Product-service
+7. 
 
 
 PATCH с телом {}	400 EMPTY_UPDATE --- 400 Bad request

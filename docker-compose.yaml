@@ -13,6 +13,12 @@ services:
     ports:
       - "8080:8080"
     networks: [ backend, edge ]
+    healthcheck:
+      test: [ "CMD-SHELL", "curl -fs http://localhost:8080/actuator/health/readiness > /dev/null || exit 1" ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 40s
     depends_on:
       redis:
         condition: service_healthy
@@ -66,8 +72,6 @@ services:
     environment:
       REDIS_PASSWORD: ${REDIS_PASSWORD}
     command: [ "sh", "-c", "exec redis-server --requirepass \"$$REDIS_PASSWORD\"" ]
-    ports:
-      - "127.0.0.1:6379:6379"
     networks: [ backend ]
     healthcheck:
       test: [ "CMD-SHELL", "redis-cli -a \"$$REDIS_PASSWORD\" --no-auth-warning ping | grep -q PONG" ]
@@ -102,15 +106,21 @@ services:
       REDIS_PORT: 6379
       REDIS_PASSWORD: ${PRODUCT_REDIS_PASSWORD}
       JWT_ISSUER_URI: http://localhost:8180/realms/ecommerce #KEYCLOAK_ISSUER_URI
-      SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI: http://keycloak:8080/realms/ecommerce/protocol/openid-connect/certs
+      JWT_JWK_SET_URI: http://keycloak:8080/realms/ecommerce/protocol/openid-connect/certs
       KAFKA_BOOTSTRAP_SERVERS: kafka:9092
       SCHEMA_REGISTRY_URL: http://schema-registry:8081
-    ports:
-      - "127.0.0.1:8081:8081"
-    networks: [ backend, edge ]
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://lgtm:4318
+    healthcheck:
+      test: [ "CMD-SHELL", "curl -fs http://localhost:8081/actuator/health/readiness > /dev/null || exit 1" ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 40s
+    networks: [ backend ]
 
   product-mongo:
-    image: mongo:7
+    image: mongo:7.0
+    restart: unless-stopped
     entrypoint:
       - bash
       - -c
@@ -130,8 +140,6 @@ services:
     volumes:
       - product-mongo-data:/data/db
       - ./product-service/docker/mongo/init-mongo.js:/docker-entrypoint-initdb.d/init-mongo.js:ro
-    ports:
-      - "127.0.0.1:27017:27017"
     healthcheck:
       test:
         - CMD
@@ -149,19 +157,18 @@ services:
       timeout: 10s
       retries: 20
       start_period: 20s
-    networks: [ backend, edge ]
+    networks: [ backend ]
 
   kafka:
     image: confluentinc/cp-kafka:8.4.0
     hostname: kafka
-    ports:
-      - "127.0.0.1:29092:29092"
+    restart: unless-stopped
     environment:
       KAFKA_NODE_ID: 1
       KAFKA_PROCESS_ROLES: broker,controller
-      KAFKA_LISTENERS: CONTROLLER://:9093,INTERNAL://:9092,EXTERNAL://:29092
-      KAFKA_ADVERTISED_LISTENERS: INTERNAL://kafka:9092,EXTERNAL://127.0.0.1:29092
-      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,INTERNAL:PLAINTEXT,EXTERNAL:PLAINTEXT
+      KAFKA_LISTENERS: CONTROLLER://:9093,INTERNAL://:9092
+      KAFKA_ADVERTISED_LISTENERS: INTERNAL://kafka:9092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,INTERNAL:PLAINTEXT
       KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
       KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
       KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
@@ -170,19 +177,20 @@ services:
       KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
       KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
       KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+    volumes:
+      - kafka-data:/var/lib/kafka/data
     healthcheck:
       test: ["CMD-SHELL", "kafka-broker-api-versions --bootstrap-server localhost:9092 > /dev/null 2>&1"]
       interval: 10s
       timeout: 10s
       retries: 10
       start_period: 20s
-    networks: [ backend, edge ]
+    networks: [ backend ]
 
   schema-registry:
     image: confluentinc/cp-schema-registry:8.4.0
     hostname: schema-registry
-    ports:
-      - "127.0.0.1:8083:8081"
+    restart: unless-stopped
     environment:
       SCHEMA_REGISTRY_HOST_NAME: schema-registry
       SCHEMA_REGISTRY_LISTENERS: http://0.0.0.0:8081
@@ -192,12 +200,12 @@ services:
       kafka:
         condition: service_healthy
     healthcheck:
-      test: [ "CMD-SHELL", "curl -fs http://localhost:8081/subjects > /dev/null || exit 1" ]
+      test: [ "CMD", "bash", "-c", "exec 3<>/dev/tcp/localhost/8081" ]
       interval: 10s
       timeout: 5s
       retries: 10
       start_period: 20s
-    networks: [ backend, edge ]
+    networks: [ backend ]
 
   kafka-ui:
     image: provectuslabs/kafka-ui:v0.7.2
@@ -214,7 +222,7 @@ services:
     networks: [ backend, edge ]
 
   product-redis:
-    image: redis:7-alpine
+    image: redis:7
     container_name: product-redis
     restart: unless-stopped
     environment:
@@ -223,14 +231,19 @@ services:
       - sh
       - -c
       - exec redis-server --requirepass "$$REDIS_PASSWORD" --maxmemory 128mb --maxmemory-policy allkeys-lru --save "" --appendonly no
-    ports:
-      - "127.0.0.1:6380:6379"
-    networks: [ backend, edge ]
+    networks: [ backend ]
     healthcheck:
       test: [ "CMD-SHELL", "redis-cli -a \"$$REDIS_PASSWORD\" --no-auth-warning ping | grep -q PONG" ]
       interval: 10s
       timeout: 5s
       retries: 5
+
+  lgtm:
+    image: grafana/otel-lgtm:latest
+    restart: unless-stopped
+    volumes:
+      - lgtm-data:/data
+    networks: [ backend ]
 
 networks:
   backend:
@@ -240,3 +253,5 @@ networks:
 volumes:
   keycloak-db-data:
   product-mongo-data:
+  kafka-data:
+  lgtm-data:

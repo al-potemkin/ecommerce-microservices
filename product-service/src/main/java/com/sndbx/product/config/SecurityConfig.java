@@ -35,6 +35,7 @@ public class SecurityConfig {
                         .requestMatchers("/actuator/health/**").permitAll()
                         .requestMatchers("/internal/**").hasRole("INTERNAL_SERVICE")
                         .requestMatchers("/api/products/**").hasRole("PRODUCT_MANAGER")
+                        .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
                         .anyRequest().authenticated())
                 .exceptionHandling(e -> e
                         .authenticationEntryPoint(entryPoint)

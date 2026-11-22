@@ -29,8 +29,4 @@ public class ProblemFactory {
                 source,
                 errors);
     }
-
-    public ApiProblem create(ErrorCode code, HttpServletRequest request) {
-        return create(code, null, request, null);
-    }
 }

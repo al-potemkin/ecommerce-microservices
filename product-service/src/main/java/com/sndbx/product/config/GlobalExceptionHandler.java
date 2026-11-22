@@ -34,41 +34,39 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 
     @ExceptionHandler(ProductServiceException.class)
     ResponseEntity<Object> handleDomain(ProductServiceException ex, HttpServletRequest request) {
-        return respond(problems.create(ex.getErrorCode(), ex.getMessage(), request, ex.getErrors()));
+        return respond(ex.getErrorCode(), ex.getMessage(), ex.getErrors(), ex, request, null);
     }
 
     @ExceptionHandler(DuplicateKeyException.class)
     ResponseEntity<Object> handleDuplicateKey(DuplicateKeyException ex, HttpServletRequest request) {
-        return respond(problems.create(ErrorCode.SKU_ALREADY_EXISTS, request));
+        return respond(ErrorCode.SKU_ALREADY_EXISTS, ex, request);
     }
 
     @ExceptionHandler(OptimisticLockingFailureException.class)
     ResponseEntity<Object> handleOptimisticLock(OptimisticLockingFailureException ex,
                                                 HttpServletRequest request) {
-        return respond(problems.create(ErrorCode.CONCURRENT_MODIFICATION, request));
+        return respond(ErrorCode.CONCURRENT_MODIFICATION, ex, request);
     }
 
     @ExceptionHandler(DataAccessResourceFailureException.class)
     ResponseEntity<Object> handleDbUnavailable(DataAccessResourceFailureException ex,
                                                HttpServletRequest request) {
-        log.error("Database unavailable on {} {}", request.getMethod(), request.getRequestURI(), ex);
-        return respond(problems.create(ErrorCode.SERVICE_UNAVAILABLE, request));
+        return respond(ErrorCode.SERVICE_UNAVAILABLE, ex, request);
     }
 
     @ExceptionHandler(Exception.class)
     ResponseEntity<Object> handleUnexpected(Exception ex, HttpServletRequest request) {
-        log.error("Unhandled exception on {} {}", request.getMethod(), request.getRequestURI(), ex);
-        return respond(problems.create(ErrorCode.INTERNAL_ERROR, request));
+        return respond(ErrorCode.INTERNAL_ERROR, ex, request);
     }
 
     @ExceptionHandler(AuthenticationException.class)
     ResponseEntity<Object> handleAuthentication(AuthenticationException ex, HttpServletRequest request) {
-        return respond(problems.create(ErrorCode.UNAUTHORIZED, request));
+        return respond(ErrorCode.UNAUTHORIZED, ex, request);
     }
 
     @ExceptionHandler(AccessDeniedException.class)
     ResponseEntity<Object> handleAccessDenied(AccessDeniedException ex, HttpServletRequest request) {
-        return respond(problems.create(ErrorCode.FORBIDDEN, request));
+        return respond(ErrorCode.FORBIDDEN, ex, request);
     }
 
     @Override
@@ -80,7 +78,7 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
                 .map(e -> new ApiProblem.FieldError(e.getField(),
                         e.isBindingFailure() ? "Invalid value" : e.getDefaultMessage()))
                 .toList();
-        return respond(problems.create(ErrorCode.VALIDATION_FAILED, null, servletRequest(request), errors));
+        return respond(ErrorCode.VALIDATION_FAILED, null, errors, ex, servletRequest(request), null);
     }
 
     @Override
@@ -88,20 +86,37 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
                                                              HttpHeaders headers, HttpStatusCode statusCode,
                                                              WebRequest request) {
         ErrorCode code = ErrorCode.fromStatus(statusCode.value());
-        ApiProblem problem = problems.create(code, servletRequest(request));
+        return respond(code, null, null, ex, servletRequest(request), headers);
+    }
+
+    private ResponseEntity<Object> respond(ErrorCode code, Exception ex, HttpServletRequest request) {
+        return respond(code, null, null, ex, request, null);
+    }
+
+    private ResponseEntity<Object> respond(ErrorCode code,
+                                           @Nullable String detail,
+                                           @Nullable List<ApiProblem.FieldError> errors,
+                                           Exception ex,
+                                           HttpServletRequest request,
+                                           @Nullable HttpHeaders headers) {
+        ApiProblem problem = problems.create(code, detail, request, errors);
+        logException(problem.getStatus(), ex, request);
         return ResponseEntity.status(problem.getStatus())
                 .headers(headers)
                 .contentType(MediaType.APPLICATION_PROBLEM_JSON)
                 .body(problem);
     }
 
-    private ResponseEntity<Object> respond(ApiProblem problem) {
-        return ResponseEntity.status(problem.getStatus())
-                .contentType(MediaType.APPLICATION_PROBLEM_JSON)
-                .body(problem);
-    }
-
     private HttpServletRequest servletRequest(WebRequest request) {
         return ((ServletWebRequest) request).getRequest();
+    }
+
+    private void logException(int status, Exception ex, HttpServletRequest request) {
+        String target = request.getMethod() + " " + request.getRequestURI();
+        if (status >= 500) {
+            log.error("{} -> {}: {}", target, status, ex.getMessage(), ex);
+        } else {
+            log.warn("{} -> {}: {} ({})", target, status, ex.getClass().getSimpleName(), ex.getMessage());
+        }
     }
 }
