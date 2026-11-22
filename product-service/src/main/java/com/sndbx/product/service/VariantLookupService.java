@@ -1,14 +1,12 @@
 package com.sndbx.product.service;
 
-import java.util.List;
-import java.util.Set;
-
 import com.sndbx.product.dto.response.VariantInfoResponse;
+import com.sndbx.product.repository.ProductRepository;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
-import com.sndbx.product.repository.ProductRepository;
-
-import lombok.RequiredArgsConstructor;
+import java.util.List;
+import java.util.Set;
 
 @Service
 @RequiredArgsConstructor

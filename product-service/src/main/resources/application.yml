@@ -28,6 +28,15 @@ spring:
         "[schema.registry.url]": ${SCHEMA_REGISTRY_URL}
         "[auto.register.schemas]": true
         "[avro.remove.java.properties]": true
+    consumer:
+      group-id: product-service
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.ErrorHandlingDeserializer
+      properties:
+        "[spring.deserializer.value.delegate.class]": io.confluent.kafka.serializers.KafkaAvroDeserializer
+        "[schema.registry.url]": ${SCHEMA_REGISTRY_URL}
+        "[specific.avro.reader]": true
 
 management:
   otlp:

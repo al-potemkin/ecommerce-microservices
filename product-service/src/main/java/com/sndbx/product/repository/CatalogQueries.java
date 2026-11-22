@@ -1,16 +1,16 @@
 package com.sndbx.product.repository;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-
 import com.sndbx.product.controller.filter.CatalogFilter;
 import org.bson.Document;
 import org.bson.types.Decimal128;
 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+
 final class CatalogQueries {
 
-    enum Facet { BRAND, GENDER, SCENT, VOLUME, PRICE, STOCK }
+    enum Facet {BRAND, GENDER, SCENT, VOLUME, PRICE, STOCK}
 
     private CatalogQueries() {
     }

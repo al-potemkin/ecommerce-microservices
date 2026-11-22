@@ -1,13 +1,11 @@
 package com.sndbx.product.service;
 
 import com.sndbx.product.config.CacheConfig;
-import org.springframework.cache.annotation.Cacheable;
-import org.springframework.stereotype.Service;
-
 import com.sndbx.product.dto.FilterUniverse;
 import com.sndbx.product.repository.CatalogFacetRepository;
-
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.stereotype.Service;
 
 @Service
 @RequiredArgsConstructor

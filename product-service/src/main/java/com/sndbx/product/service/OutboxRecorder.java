@@ -1,9 +1,5 @@
 package com.sndbx.product.service;
 
-import java.time.Instant;
-import java.util.List;
-import java.util.UUID;
-
 import com.sndbx.product.model.Product;
 import com.sndbx.product.model.Variant;
 import com.sndbx.product.model.outbox.OutboxEvent;
@@ -11,13 +7,15 @@ import com.sndbx.product.model.outbox.OutboxStatus;
 import com.sndbx.product.model.outbox.ProductEventPayload;
 import com.sndbx.product.model.outbox.ProductEventType;
 import com.sndbx.product.repository.OutboxRepository;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
-
-
-import lombok.RequiredArgsConstructor;
 import tools.jackson.databind.ObjectMapper;
+
+import java.time.Instant;
+import java.util.List;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor

@@ -91,7 +91,7 @@ public class ProductService {
         if (!hasActiveVariant(product.getVariants())) {
             throw new NoActiveVariantsException(id);
         }
-        if (!product.isActive()) {                       // повторная активация событий не порождает
+        if (!product.isActive()) {
             product.setActive(true);
             product = repository.save(product);
             outbox.record(ProductEventType.PRODUCT_ACTIVATED, product, product.getVariants());

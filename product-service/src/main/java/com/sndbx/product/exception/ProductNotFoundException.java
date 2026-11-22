@@ -1,7 +1,6 @@
 package com.sndbx.product.exception;
 
 import com.sndbx.product.config.utility.ErrorCode;
-import org.springframework.http.HttpStatus;
 
 public class ProductNotFoundException extends ProductServiceException {
     public ProductNotFoundException(String productId) {
