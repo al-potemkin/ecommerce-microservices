@@ -2,6 +2,7 @@ package com.sndbx.product.service;
 
 import com.sndbx.product.controller.filter.CatalogFilter;
 import com.sndbx.product.dto.FacetValue;
+import com.sndbx.product.dto.FilterUniverse;
 import com.sndbx.product.dto.PriceRange;
 import com.sndbx.product.dto.response.CatalogFacetsResponse;
 import com.sndbx.product.dto.response.CatalogItemResponse;
@@ -20,35 +21,33 @@ import java.util.function.Function;
 @Service
 public class CatalogService {
 
-    private final CatalogQueryRepository queryRepository;
-    private final CatalogFacetRepository facetRepository;
-    private final CatalogMapper mapper;
+    private CatalogQueryRepository queryRepository;
+    private CatalogFacetRepository facetRepository;
+    private FilterUniverseService universeService;
+    private CatalogMapper mapper;
 
-    public CatalogService(CatalogQueryRepository queryRepository, CatalogFacetRepository facetRepository, CatalogMapper mapper) {
+    public CatalogService(CatalogQueryRepository queryRepository, CatalogFacetRepository facetRepository, FilterUniverseService universeService, CatalogMapper mapper) {
         this.queryRepository = queryRepository;
         this.facetRepository = facetRepository;
+        this.universeService = universeService;
         this.mapper = mapper;
     }
 
-    public PageResponse<CatalogItemResponse> search(CatalogFilter filter) {
+    public PageResponse<CatalogItemResponse> findProductsFromCatalog(CatalogFilter filter) {
         return mapper.toPageResponse(queryRepository.search(filter));
     }
 
     public CatalogFacetsResponse facets(CatalogFilter filter) {
         CatalogFacetRepository.FacetCounts counts = facetRepository.counts(filter);
-
-        List<String> brands = counts.allBrands().stream()
-                .sorted(String.CASE_INSENSITIVE_ORDER)
-                .toList();
-        List<Integer> volumes = counts.allVolumes().stream().sorted().toList();
+        FilterUniverse universe = universeService.get();
 
         return new CatalogFacetsResponse(
-                facetValues(brands, b -> counts.brands().getOrDefault(b, 0L)),
+                facetValues(universe.brands(), b -> counts.brands().getOrDefault(b, 0L)),
                 facetValues(List.of(Gender.values()), g -> counts.genders().getOrDefault(g.name(), 0L)),
                 facetValues(List.of(ScentFamily.values()), s -> counts.scents().getOrDefault(s.name(), 0L)),
-                facetValues(volumes, v -> counts.volumes().getOrDefault(v, 0L)),
-                roundOut(counts.price())
-        );
+                facetValues(universe.volumes(), v -> counts.volumes().getOrDefault(v, 0L)),
+                roundOut(counts.price()),
+                counts.inStock());
     }
 
     private static <T> List<FacetValue<T>> facetValues(List<T> values, Function<T, Long> count) {

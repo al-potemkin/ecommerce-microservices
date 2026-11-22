@@ -12,5 +12,6 @@ public record CatalogFacetsResponse(
         List<FacetValue<Gender>> genders,
         List<FacetValue<ScentFamily>> scents,
         List<FacetValue<Integer>> volumes,
-        PriceRange price) {
+        PriceRange price,
+        long inStockCount) {
 }

@@ -17,6 +17,7 @@ public record CatalogFilter(
         Set<Integer> volume,
         @PositiveOrZero BigDecimal priceMin,
         @PositiveOrZero BigDecimal priceMax,
+        Boolean inStock,
         @Min(0) Integer page,
         @Min(1) @Max(100) Integer size,
         CatalogSort sort) {
@@ -29,5 +30,9 @@ public record CatalogFilter(
         page = page == null ? 0 : page;
         size = size == null ? 20 : size;
         sort = sort == null ? CatalogSort.NEWEST : sort;
+    }
+
+    public boolean onlyInStock() {
+        return Boolean.TRUE.equals(inStock);
     }
 }

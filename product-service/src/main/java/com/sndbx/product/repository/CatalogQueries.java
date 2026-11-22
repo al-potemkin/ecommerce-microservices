@@ -10,7 +10,7 @@ import org.bson.types.Decimal128;
 
 final class CatalogQueries {
 
-    enum Facet { BRAND, GENDER, SCENT, VOLUME, PRICE }
+    enum Facet { BRAND, GENDER, SCENT, VOLUME, PRICE, STOCK }
 
     private CatalogQueries() {
     }
@@ -27,12 +27,19 @@ final class CatalogQueries {
             match.append("scentFamilies", new Document("$in", names(filter.scent())));
         }
         match.append("variants", new Document("$elemMatch",
-                variantQuery(filter, excluded != Facet.VOLUME, excluded != Facet.PRICE)));
+                variantQuery(filter,
+                        excluded != Facet.VOLUME,
+                        excluded != Facet.PRICE,
+                        excluded != Facet.STOCK && filter.onlyInStock())));
         return match;
     }
 
-    static Document variantQuery(CatalogFilter filter, boolean withVolume, boolean withPrice) {
+    static Document variantQuery(CatalogFilter filter, boolean withVolume, boolean withPrice,
+                                 boolean requireInStock) {
         Document query = new Document("active", true);
+        if (requireInStock) {
+            query.append("inStock", true);
+        }
         if (withVolume && !filter.volume().isEmpty()) {
             query.append("volumeMl", new Document("$in", new ArrayList<>(filter.volume())));
         }
@@ -47,7 +54,7 @@ final class CatalogQueries {
 
     static Document unwoundVariantMatch(CatalogFilter filter, boolean withVolume, boolean withPrice) {
         Document prefixed = new Document();
-        variantQuery(filter, withVolume, withPrice)
+        variantQuery(filter, withVolume, withPrice, filter.onlyInStock())
                 .forEach((key, value) -> prefixed.append("variants." + key, value));
         return prefixed;
     }
@@ -55,6 +62,9 @@ final class CatalogQueries {
     static Document matchedVariants(CatalogFilter filter) {
         List<Document> and = new ArrayList<>();
         and.add(new Document("$eq", List.of("$$v.active", true)));
+        if (filter.onlyInStock()) {
+            and.add(new Document("$eq", List.of("$$v.inStock", true)));
+        }
         if (!filter.volume().isEmpty()) {
             and.add(new Document("$in", List.of("$$v.volumeMl", new ArrayList<>(filter.volume()))));
         }

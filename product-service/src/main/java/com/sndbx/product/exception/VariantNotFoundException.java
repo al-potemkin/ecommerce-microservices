@@ -7,4 +7,8 @@ public class VariantNotFoundException extends ProductServiceException {
         super(ErrorCode.VARIANT_NOT_FOUND,
                 "Variant with SKU '" + sku + "' was not found in product '" + productId + "'");
     }
+
+    public VariantNotFoundException(String sku) {
+        super(ErrorCode.VARIANT_NOT_FOUND, "Variant with SKU '" + sku + "' was not found");
+    }
 }

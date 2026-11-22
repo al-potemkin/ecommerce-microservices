@@ -15,13 +15,14 @@ import org.mapstruct.MappingTarget;
 public interface ProductMapper {
 
     @Mapping(target = "id", ignore = true)
-    @Mapping(target = "active", constant = "true")
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "updatedAt", ignore = true)
     @Mapping(target = "version", ignore = true)
+    @Mapping(target = "active", constant = "false")
     Product toEntity(CreateProductRequest request);
 
     @Mapping(target = "active", source = "active", defaultValue = "true")
+    @Mapping(target = "inStock", constant = "false")
     Variant toVariant(VariantRequest request);
 
     @Mapping(target = "id", ignore = true)

@@ -10,5 +10,6 @@ public record CatalogItemView(
         Gender gender,
         String mainImage,
         List<Variant> matchedVariants,
-        BigDecimal minPrice) {
+        BigDecimal minPrice,
+        boolean inStock) {
 }

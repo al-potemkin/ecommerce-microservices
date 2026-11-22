@@ -7,7 +7,6 @@ import com.sndbx.product.model.CatalogItemView;
 import com.sndbx.product.model.Product;
 import lombok.RequiredArgsConstructor;
 import org.bson.Document;
-import org.bson.types.Decimal128;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
@@ -15,7 +14,6 @@ import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.stereotype.Repository;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 
 @Repository
@@ -25,8 +23,7 @@ public class CatalogQueryRepository {
     private final MongoTemplate mongoTemplate;
 
     public Page<CatalogItemView> search(CatalogFilter filter) {
-        MongoCollection<Document> products =
-                mongoTemplate.getCollection(mongoTemplate.getCollectionName(Product.class));
+        MongoCollection<Document> products = mongoTemplate.getCollection(mongoTemplate.getCollectionName(Product.class));
         PageRequest pageRequest = PageRequest.of(filter.page(), filter.size());
 
         Document match = CatalogQueries.productMatch(filter, null);
@@ -56,7 +53,9 @@ public class CatalogQueryRepository {
         List<Document> computeVariants = List.of(
                 new Document("$addFields", new Document("matchedVariants", CatalogQueries.matchedVariants(filter))),
                 new Document("$addFields",
-                        new Document("minPrice", new Document("$min", "$matchedVariants.price"))));
+                        new Document("minPrice", new Document("$min", "$matchedVariants.price"))
+                                .append("inStock", new Document("$in", List.of(true, "$matchedVariants.inStock")))
+                ));
 
         List<Document> stages = new ArrayList<>();
         stages.add(new Document("$match", match));
@@ -67,12 +66,16 @@ public class CatalogQueryRepository {
             stages.addAll(page);
             stages.addAll(computeVariants);
         }
-        stages.add(new Document("$project", new Document("name", 1)
+
+        Document projection = new Document("name", 1)
                 .append("brand", 1)
                 .append("gender", 1)
                 .append("mainImage", 1)
                 .append("matchedVariants", 1)
-                .append("minPrice", 1)));
+                .append("minPrice", 1)
+                .append("inStock", 1);
+
+        stages.add(new Document("$project", projection));
         return stages;
     }
 

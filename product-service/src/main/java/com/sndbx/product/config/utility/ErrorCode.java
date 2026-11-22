@@ -20,6 +20,7 @@ public enum ErrorCode {
 
     CONFLICT(HttpStatus.CONFLICT, "Conflict", "The request conflicts with the current state of the resource"),
     SKU_ALREADY_EXISTS(HttpStatus.CONFLICT, "SKU Already Exists", "A variant with this SKU already exists"),
+    NO_ACTIVE_VARIANTS(HttpStatus.CONFLICT, "No Active Variants", "Product has no active variants and cannot be activated"),
     VARIANT_CONFLICT(HttpStatus.CONFLICT, "Variant Conflict", "Variants conflict with each other or with existing products"),
     CONCURRENT_MODIFICATION(HttpStatus.CONFLICT, "Concurrent Modification", "The resource was modified by another request, please retry"),
 

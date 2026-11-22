@@ -46,52 +46,52 @@ public class ProductController {
                 .body(created);
     }
 
-    @GetMapping("/{id}")
-    public ProductResponse get(@PathVariable String id, HttpServletRequest request) {
+    @GetMapping("/{productId}")
+    public ProductResponse getProductById(@PathVariable String productId, HttpServletRequest request) {
         boolean manager = request.isUserInRole("PRODUCT_MANAGER");
-        return productService.get(id, manager);
+        return productService.getProductById(productId, manager);
     }
 
-    @PutMapping("/{id}")
-    public ProductResponse update(@PathVariable String id,
+    @PutMapping("/{productId}")
+    public ProductResponse update(@PathVariable String productId,
                                   @Valid @RequestBody UpdateProductRequest request) {
-        return productService.update(id, request);
+        return productService.update(productId, request);
     }
 
-    @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deactivate(@PathVariable String id) {
-        productService.deactivate(id);
+    @DeleteMapping("/{productId}")
+    public ResponseEntity<Void> deactivate(@PathVariable String productId) {
+        productService.deactivate(productId);
         return ResponseEntity.noContent().build();
     }
 
-    @PostMapping("/{id}/activate")
-    public ProductResponse activate(@PathVariable String id) {
-        return productService.activate(id);
+    @PostMapping("/{productId}/activate")
+    public ProductResponse activate(@PathVariable String productId) {
+        return productService.activate(productId);
     }
 
-    @PostMapping("/{id}/variants")
-    public ResponseEntity<ProductResponse> addVariant(@PathVariable String id,
+    @PostMapping("/{productId}/variants")
+    public ResponseEntity<ProductResponse> addVariant(@PathVariable String productId,
                                                       @Valid @RequestBody VariantRequest request) {
-        ProductResponse updated = productService.addVariant(id, request);
+        ProductResponse updated = productService.addVariant(productId, request);
         return ResponseEntity
-                .created(URI.create("/api/products/" + id))
+                .created(URI.create("/api/products/" + productId))
                 .body(updated);
     }
 
-    @PatchMapping("/{id}/variants/{sku}")
-    public ProductResponse updateVariant(@PathVariable String id,
+    @PatchMapping("/{productId}/variants/{sku}")
+    public ProductResponse updateVariant(@PathVariable String productId,
                                          @PathVariable String sku,
                                          @Valid @RequestBody UpdateVariantRequest request) {
-        return productService.updateVariant(id, sku, request);
+        return productService.updateVariant(productId, sku, request);
     }
 
     @GetMapping
-    public PageResponse<CatalogItemResponse> list(@Valid CatalogFilter filter) {
-        return catalogService.search(filter);
+    public PageResponse<CatalogItemResponse> getProductCatalog(@Valid CatalogFilter filter) {
+        return catalogService.findProductsFromCatalog(filter);
     }
 
     @GetMapping("/filters")
-    public CatalogFacetsResponse filters(@Valid CatalogFilter filter) {
+    public CatalogFacetsResponse getFilters(@Valid CatalogFilter filter) {
         return catalogService.facets(filter);
     }
 }

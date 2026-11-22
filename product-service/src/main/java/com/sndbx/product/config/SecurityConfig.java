@@ -23,7 +23,7 @@ public class SecurityConfig {
     SecurityFilterChain securityFilterChain(HttpSecurity http,
                                             JwtAuthenticationConverter jwtAuthenticationConverter,
                                             ProblemAuthenticationEntryPoint entryPoint,
-                                            ProblemAccessDeniedHandler accessDeniedHandler) {
+                                            ProblemAccessDeniedHandler accessDeniedHandler) throws Exception {
         http
                 .csrf(AbstractHttpConfigurer::disable)
                 .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
@@ -33,6 +33,7 @@ public class SecurityConfig {
                                 "/api/products/filters",
                                 "/api/products/{id}").permitAll()
                         .requestMatchers("/actuator/health/**").permitAll()
+                        .requestMatchers("/internal/**").hasRole("INTERNAL_SERVICE")
                         .requestMatchers("/api/products/**").hasRole("PRODUCT_MANAGER")
                         .anyRequest().authenticated())
                 .exceptionHandling(e -> e

@@ -12,6 +12,7 @@ public record CatalogItemResponse(
         Gender gender,
         String mainImage,
         BigDecimal minPrice,
-        List<Integer> volumes
+        List<Integer> volumes,
+        boolean inStock
 ) {
 }
