@@ -96,7 +96,7 @@ springdoc:
     urls:
       - name: Product Service
         url: /aggregate/product-service/v3/api-docs
-      - name: Order Service
-        url: /aggregate/order-service/v3/api-docs
-      - name: Inventory Service
-        url: /aggregate/inventory-service/v3/api-docs
+#      - name: Order Service
+#        url: /aggregate/order-service/v3/api-docs
+#      - name: Inventory Service
+#        url: /aggregate/inventory-service/v3/api-docs
