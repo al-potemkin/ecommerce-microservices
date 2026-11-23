@@ -43,12 +43,12 @@ public class OpenApiConfig {
                 .route("product-openapi", r -> r.path(OPENAPI_PATH.formatted("product-service"))
                         .filters(f -> f.rewritePath(OPENAPI_PATH.formatted("product-service"), V3_API_DOCS))
                         .uri(productUri))
-                .route("order-openapi", r -> r.path(OPENAPI_PATH.formatted("order-service"))
-                        .filters(f -> f.rewritePath(OPENAPI_PATH.formatted("order-service"), V3_API_DOCS))
-                        .uri(orderUri))
                 .route("inventory-openapi", r -> r.path(OPENAPI_PATH.formatted("inventory-service"))
                         .filters(f -> f.rewritePath(OPENAPI_PATH.formatted("inventory-service"), V3_API_DOCS))
                         .uri(inventoryUri))
+                .route("order-openapi", r -> r.path(OPENAPI_PATH.formatted("order-service"))
+                        .filters(f -> f.rewritePath(OPENAPI_PATH.formatted("order-service"), V3_API_DOCS))
+                        .uri(orderUri))
                 .build();
     }
 }

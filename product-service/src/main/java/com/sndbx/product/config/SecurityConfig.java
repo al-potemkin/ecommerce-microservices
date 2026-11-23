@@ -23,7 +23,7 @@ public class SecurityConfig {
     SecurityFilterChain securityFilterChain(HttpSecurity http,
                                             JwtAuthenticationConverter jwtAuthenticationConverter,
                                             ProblemAuthenticationEntryPoint entryPoint,
-                                            ProblemAccessDeniedHandler accessDeniedHandler) throws Exception {
+                                            ProblemAccessDeniedHandler accessDeniedHandler) {
         http
                 .csrf(AbstractHttpConfigurer::disable)
                 .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))

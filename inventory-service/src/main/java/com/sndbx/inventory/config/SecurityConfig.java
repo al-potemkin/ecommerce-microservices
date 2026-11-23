@@ -22,13 +22,14 @@ public class SecurityConfig {
     SecurityFilterChain securityFilterChain(HttpSecurity http,
                                             JwtAuthenticationConverter jwtAuthenticationConverter,
                                             ProblemAuthenticationEntryPoint entryPoint,
-                                            ProblemAccessDeniedHandler accessDeniedHandler) throws Exception {
+                                            ProblemAccessDeniedHandler accessDeniedHandler) {
         http
                 .csrf(AbstractHttpConfigurer::disable)
                 .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS)).authorizeHttpRequests(auth -> auth
                         .requestMatchers("/actuator/health/**").permitAll()
                         .requestMatchers("/internal/**").hasRole("INTERNAL_SERVICE")
                         .requestMatchers("/api/inventory/**").hasRole("INVENTORY_MANAGER")
+                        .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
                         .anyRequest().authenticated())
                 .exceptionHandling(e -> e
                         .authenticationEntryPoint(entryPoint)

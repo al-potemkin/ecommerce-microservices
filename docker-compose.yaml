@@ -2,8 +2,9 @@ services:
   api-gateway:
     build: ./api-gateway
     restart: unless-stopped
+    container_name: api-gateway
     environment:
-      #      SPRING_PROFILES_ACTIVE: dev #enable dev-mode
+      SPRING_PROFILES_ACTIVE: dev #enable dev-mode
       PRODUCT_SERVICE_URL: http://product-service:8081
       ORDER_SERVICE_URL: http://order-stub:8080
       INVENTORY_SERVICE_URL: http://inventory-service:8083
@@ -114,7 +115,7 @@ services:
         condition: service_healthy
     environment:
       SERVER_PORT: 8083
-      APP_RESERVATION_CLEANUP_CRON: "0 * * * * *"
+      SPRING_PROFILES_ACTIVE: dev #enable dev-mod
       INVENTORY_DB_HOST: inventory-db
       INVENTORY_DB_PORT: 5432
       INVENTORY_DB_NAME: ${INVENTORY_DB_NAME}
@@ -150,7 +151,7 @@ services:
         condition: service_healthy
     environment:
       SERVER_PORT: 8081
-      #      SPRING_PROFILES_ACTIVE: dev #enable dev-mode
+      SPRING_PROFILES_ACTIVE: dev #enable dev-mode
       MONGODB_HOST: product-mongo
       MONGODB_PORT: 27017
       PRODUCT_DB_NAME: ${PRODUCT_DB_NAME}

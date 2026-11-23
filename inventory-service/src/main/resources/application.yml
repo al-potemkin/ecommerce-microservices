@@ -94,3 +94,9 @@ app:
     expiry-poll-delay-ms: 60000
     retention-days: 30
     cleanup-cron: "0 30 3 * * *"
+
+springdoc:
+  api-docs:
+    enabled: false
+  swagger-ui:
+    enabled: false
