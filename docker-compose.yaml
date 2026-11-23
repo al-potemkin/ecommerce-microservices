@@ -104,12 +104,11 @@ services:
       PRODUCT_DB_PASSWORD: ${PRODUCT_DB_PASSWORD}
       REDIS_HOST: product-redis
       REDIS_PORT: 6379
-      REDIS_PASSWORD: ${PRODUCT_REDIS_PASSWORD}
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
       JWT_ISSUER_URI: http://localhost:8180/realms/ecommerce #KEYCLOAK_ISSUER_URI
       JWT_JWK_SET_URI: http://keycloak:8080/realms/ecommerce/protocol/openid-connect/certs
       KAFKA_BOOTSTRAP_SERVERS: kafka:9092
       SCHEMA_REGISTRY_URL: http://schema-registry:8081
-      OTEL_EXPORTER_OTLP_ENDPOINT: http://lgtm:4318
     healthcheck:
       test: [ "CMD-SHELL", "curl -fs http://localhost:8081/actuator/health/readiness > /dev/null || exit 1" ]
       interval: 10s
@@ -137,9 +136,12 @@ services:
       PRODUCT_DB_NAME: ${PRODUCT_DB_NAME}
       PRODUCT_DB_USER: ${PRODUCT_DB_USER}
       PRODUCT_DB_PASSWORD: ${PRODUCT_DB_PASSWORD}
+#    ports:
+#      - "27017:27017"
     volumes:
       - product-mongo-data:/data/db
       - ./product-service/docker/mongo/init-mongo.js:/docker-entrypoint-initdb.d/init-mongo.js:ro
+#      - ./product-service/docker/mongo/seed-products.js:/docker-entrypoint-initdb.d/seed-products.js:ro
     healthcheck:
       test:
         - CMD
@@ -158,6 +160,7 @@ services:
       retries: 20
       start_period: 20s
     networks: [ backend ]
+#    , edge ]
 
   kafka:
     image: confluentinc/cp-kafka:8.4.0
@@ -180,7 +183,7 @@ services:
     volumes:
       - kafka-data:/var/lib/kafka/data
     healthcheck:
-      test: ["CMD-SHELL", "kafka-broker-api-versions --bootstrap-server localhost:9092 > /dev/null 2>&1"]
+      test: [ "CMD-SHELL", "kafka-broker-api-versions --bootstrap-server localhost:9092 > /dev/null 2>&1" ]
       interval: 10s
       timeout: 10s
       retries: 10
@@ -226,7 +229,7 @@ services:
     container_name: product-redis
     restart: unless-stopped
     environment:
-      REDIS_PASSWORD: ${PRODUCT_REDIS_PASSWORD}
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
     command:
       - sh
       - -c
@@ -238,13 +241,6 @@ services:
       timeout: 5s
       retries: 5
 
-  lgtm:
-    image: grafana/otel-lgtm:latest
-    restart: unless-stopped
-    volumes:
-      - lgtm-data:/data
-    networks: [ backend ]
-
 networks:
   backend:
     internal: true
@@ -254,4 +250,3 @@ volumes:
   keycloak-db-data:
   product-mongo-data:
   kafka-data:
-  lgtm-data:
