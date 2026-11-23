@@ -51,7 +51,7 @@ public class Product {
 
     private List<Variant> variants = new ArrayList<>();
 
-    private boolean active = true;
+    private boolean active = false;
 
     @CreatedDate
     private Instant createdAt;

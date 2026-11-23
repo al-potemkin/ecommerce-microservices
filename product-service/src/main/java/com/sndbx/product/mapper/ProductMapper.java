@@ -18,7 +18,6 @@ public interface ProductMapper {
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "updatedAt", ignore = true)
     @Mapping(target = "version", ignore = true)
-    @Mapping(target = "active", constant = "false")
     Product toEntity(CreateProductRequest request);
 
     @Mapping(target = "active", source = "active", defaultValue = "true")
