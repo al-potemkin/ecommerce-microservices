@@ -14,7 +14,7 @@ public class InventoryEventListener {
 
     private final ProductService productService;
 
-    @KafkaListener(topics = KafkaTopicConfig.INVENTORY_EVENTS)
+    @KafkaListener(topics = "${app.kafka.topics.inventory-events}")
     public void onEvent(InventoryEvent event) {
         log.info("Inventory event {} type={} sku={}", event.getEventId(), event.getType(), event.getSku());
 

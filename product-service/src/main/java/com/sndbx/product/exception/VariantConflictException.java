@@ -1,7 +1,7 @@
 package com.sndbx.product.exception;
 
-import com.sndbx.product.config.utility.ApiProblem;
-import com.sndbx.product.config.utility.ErrorCode;
+import com.sndbx.product.exception.config.ApiProblem;
+import com.sndbx.product.exception.config.ErrorCode;
 
 import java.util.List;
 

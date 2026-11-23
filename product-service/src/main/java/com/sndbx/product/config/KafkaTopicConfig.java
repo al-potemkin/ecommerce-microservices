@@ -8,7 +8,7 @@ import org.springframework.kafka.config.TopicBuilder;
 @Configuration
 public class KafkaTopicConfig {
     public static final String PRODUCT_EVENTS = "product-events";
-    public static final String INVENTORY_EVENTS = "inventory-events";
+    private static final String PRODUCT_EVENTS_DLT = "product-events.DLT";
 
     @Bean
     NewTopic productEvents() {
@@ -18,11 +18,10 @@ public class KafkaTopicConfig {
                 .build();
     }
 
-    // TODO: move to inventory-service
     @Bean
-    public NewTopic inventoryEventsTopic() {
-        return TopicBuilder.name(INVENTORY_EVENTS)
-                .partitions(3)
+    public NewTopic productEventsDltTopic() {
+        return TopicBuilder.name(PRODUCT_EVENTS_DLT)
+                .partitions(1)
                 .replicas(1)
                 .build();
     }

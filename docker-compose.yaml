@@ -3,10 +3,10 @@ services:
     build: ./api-gateway
     restart: unless-stopped
     environment:
-#      SPRING_PROFILES_ACTIVE: dev #enable dev-mode
+      #      SPRING_PROFILES_ACTIVE: dev #enable dev-mode
       PRODUCT_SERVICE_URL: http://product-service:8081
       ORDER_SERVICE_URL: http://order-stub:8080
-      INVENTORY_SERVICE_URL: http://inventory-stub:8080
+      INVENTORY_SERVICE_URL: http://inventory-service:8083
       KEYCLOAK_ISSUER_URI: http://localhost:8180/realms/ecommerce
       SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI: http://keycloak:8080/realms/ecommerce/protocol/openid-connect/certs
       REDIS_HOST: redis
@@ -80,6 +80,58 @@ services:
       timeout: 3s
       retries: 10
 
+  # --------- inventory-service ---------
+  inventory-db:
+    image: postgres:16
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${INVENTORY_DB_NAME}
+      POSTGRES_USER: ${INVENTORY_DB_USER}
+      POSTGRES_PASSWORD: ${INVENTORY_DB_PASSWORD}
+    volumes:
+      - inventory-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U ${INVENTORY_DB_USER} -d ${INVENTORY_DB_NAME}" ]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    ports:
+      - "5433:5432"
+    networks: [ backend, edge ]
+
+  inventory-service:
+    build:
+      context: ./inventory-service
+      dockerfile: Dockerfile
+    container_name: inventory-service
+    restart: unless-stopped
+    depends_on:
+      inventory-db:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+      schema-registry:
+        condition: service_healthy
+    environment:
+      SERVER_PORT: 8083
+      APP_RESERVATION_CLEANUP_CRON: "0 * * * * *"
+      INVENTORY_DB_HOST: inventory-db
+      INVENTORY_DB_PORT: 5432
+      INVENTORY_DB_NAME: ${INVENTORY_DB_NAME}
+      INVENTORY_DB_USER: ${INVENTORY_DB_USER}
+      INVENTORY_DB_PASSWORD: ${INVENTORY_DB_PASSWORD}
+      JWT_ISSUER_URI: http://localhost:8180/realms/ecommerce #KEYCLOAK_ISSUER_URI
+      JWT_JWK_SET_URI: http://keycloak:8080/realms/ecommerce/protocol/openid-connect/certs
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      SCHEMA_REGISTRY_URL: http://schema-registry:8081
+    healthcheck:
+      test: [ "CMD-SHELL", "curl -fs http://localhost:8083/actuator/health/readiness > /dev/null || exit 1" ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 40s
+    networks: [ backend ]
+
   # ---------- product-service ----------
   product-service:
     build:
@@ -98,7 +150,7 @@ services:
         condition: service_healthy
     environment:
       SERVER_PORT: 8081
-#      SPRING_PROFILES_ACTIVE: dev #enable dev-mode
+      #      SPRING_PROFILES_ACTIVE: dev #enable dev-mode
       MONGODB_HOST: product-mongo
       MONGODB_PORT: 27017
       PRODUCT_DB_NAME: ${PRODUCT_DB_NAME}
@@ -138,12 +190,12 @@ services:
       PRODUCT_DB_NAME: ${PRODUCT_DB_NAME}
       PRODUCT_DB_USER: ${PRODUCT_DB_USER}
       PRODUCT_DB_PASSWORD: ${PRODUCT_DB_PASSWORD}
-#    ports:
-#      - "27017:27017"
+    ports:
+      - "27017:27017"
     volumes:
       - product-mongo-data:/data/db
       - ./product-service/docker/mongo/init-mongo.js:/docker-entrypoint-initdb.d/init-mongo.js:ro
-#      - ./product-service/docker/mongo/seed-products.js:/docker-entrypoint-initdb.d/seed-products.js:ro
+    #      - ./product-service/docker/mongo/seed-products.js:/docker-entrypoint-initdb.d/seed-products.js:ro
     healthcheck:
       test:
         - CMD
@@ -161,8 +213,7 @@ services:
       timeout: 10s
       retries: 20
       start_period: 20s
-    networks: [ backend ]
-#    , edge ]
+    networks: [ backend, edge ]
   kafka:
     image: confluentinc/cp-kafka:8.4.0
     hostname: kafka
@@ -251,3 +302,4 @@ volumes:
   keycloak-db-data:
   product-mongo-data:
   kafka-data:
+  inventory-db-data:

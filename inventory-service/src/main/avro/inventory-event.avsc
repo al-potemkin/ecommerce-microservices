@@ -1,0 +1,36 @@
+{
+  "type": "record",
+  "name": "InventoryEvent",
+  "namespace": "com.sndbx.inventory.events",
+  "doc": "Warehouse event regarding SKU availability.",
+  "fields": [
+    {
+      "name": "eventId",
+      "type": "string"
+    },
+    {
+      "name": "type",
+      "type": {
+        "type": "enum",
+        "name": "InventoryEventType",
+        "symbols": [
+          "UNKNOWN",
+          "SKU_IN_STOCK",
+          "SKU_OUT_OF_STOCK"
+        ],
+        "default": "UNKNOWN"
+      }
+    },
+    {
+      "name": "occurredAt",
+      "type": {
+        "type": "long",
+        "logicalType": "timestamp-millis"
+      }
+    },
+    {
+      "name": "sku",
+      "type": "string"
+    }
+  ]
+}

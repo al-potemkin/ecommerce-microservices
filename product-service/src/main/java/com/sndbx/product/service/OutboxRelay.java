@@ -5,7 +5,7 @@ import com.sndbx.product.events.ProductEvent;
 import com.sndbx.product.mapper.ProductEventAvroMapper;
 import com.sndbx.product.model.outbox.OutboxEvent;
 import com.sndbx.product.model.outbox.OutboxStatus;
-import com.sndbx.product.model.outbox.ProductEventPayload;
+import com.sndbx.product.dto.payload.ProductEventPayload;
 import com.sndbx.product.repository.OutboxRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

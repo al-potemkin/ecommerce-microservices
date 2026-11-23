@@ -1,48 +1,96 @@
 server:
-  port: 8081
+  port: ${SERVER_PORT:8082}
+
 spring:
   application:
     name: inventory-service
 
-  # Database connection properties
   datasource:
-    url: jdbc:postgresql://localhost:5432/inventory_db
-    username: postgres
-    password: postgres
+    url: jdbc:postgresql://${INVENTORY_DB_HOST:localhost}:${INVENTORY_DB_PORT:5433}/${INVENTORY_DB_NAME:inventory}
+    username: ${INVENTORY_DB_USER:inventory_app}
+    password: ${INVENTORY_DB_PASSWORD}
+
   jpa:
-    database-platform: org.hibernate.dialect.PostgreSQLDialect
+    open-in-view: false
     hibernate:
-      ddl-auto: none
+      ddl-auto: validate
+    properties:
+      hibernate:
+        jdbc:
+          time_zone: UTC
+
   flyway:
     enabled: true
-    locations: classpath:db/migration
-#    baseline-on-migrate: false
-#    validate-on-migrate: true
 
-  # Kafka properties
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: ${JWT_ISSUER_URI}
+          jwk-set-uri: ${JWT_JWK_SET_URI}
+
   kafka:
-    bootstrap-servers: localhost:29092,localhost:29093,localhost:29094
-
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS}
     producer:
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
       value-serializer: io.confluent.kafka.serializers.KafkaAvroSerializer
-      acks: all
-      retries: 2147483647
       properties:
-        "max.in.flight.requests.per.connection": 5
-        "enable.idempotence": true
-        "schema.registry.url": http://localhost:8087
-
+        "[max.block.ms]": 5000
+        "[schema.registry.url]": ${SCHEMA_REGISTRY_URL}
+        "[auto.register.schemas]": true
+        "[avro.remove.java.properties]": true
     consumer:
+      group-id: inventory-service
+      auto-offset-reset: earliest
       key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
       value-deserializer: org.springframework.kafka.support.serializer.ErrorHandlingDeserializer
-      group-id: inventoryService
-      auto-offset-reset: latest
-      enable-auto-commit: false
       properties:
-        "spring.deserializer.value.delegate.class": io.confluent.kafka.serializers.KafkaAvroDeserializer
-        "schema.registry.url": http://localhost:8087
-        "specific.avro.reader": true
+        "[spring.deserializer.value.delegate.class]": io.confluent.kafka.serializers.KafkaAvroDeserializer
+        "[schema.registry.url]": ${SCHEMA_REGISTRY_URL}
+        "[specific.avro.reader]": true
 
-    listener:
-      ack-mode: record
+management:
+  otlp:
+    metrics:
+      export:
+        enabled: false
+  tracing:
+    sampling:
+      probability: 1.0
+    export:
+      otlp:
+        enabled: false
+  logging:
+    export:
+      otlp:
+        enabled: false
+  endpoints:
+    web:
+      exposure:
+        include: health
+  endpoint:
+    health:
+      probes:
+        enabled: true
+      group:
+        readiness:
+          include: readinessState,db
+
+app:
+  kafka:
+    schema-registry-url: ${SCHEMA_REGISTRY_URL}
+    topics:
+      product-events: product-events
+    retry:
+      max-retries: 3
+      initial-interval-ms: 1000
+      multiplier: 2.0
+      max-interval-ms: 10000
+  outbox:
+    poll-delay-ms: 1000
+    retention-days: 7
+  reservation:
+    ttl-minutes: 1 #15
+    expiry-poll-delay-ms: 60000
+    retention-days: 30
+    cleanup-cron: "0 30 3 * * *"

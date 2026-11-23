@@ -73,5 +73,13 @@ springdoc:
     enabled: false
 
 app:
+  kafka:
+    topics:
+      inventory-events: inventory-events
+    retry:
+      max-retries: 3
+      initial-interval-ms: 1000
+      multiplier: 2.0
+      max-interval-ms: 10000
   outbox:
     poll-delay-ms: 1000

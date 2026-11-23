@@ -1,0 +1,73 @@
+{
+  "type": "record",
+  "name": "ProductEvent",
+  "namespace": "com.sndbx.product.events",
+  "doc": "Product event. It conveys the state of a product, allowing the consumer to process it again.",
+  "fields": [
+    {
+      "name": "eventId",
+      "type": "string",
+      "doc": "Event UUID, used by the consumer to discard duplicates"
+    },
+    {
+      "name": "type",
+      "type": {
+        "type": "enum",
+        "name": "ProductEventType",
+        "symbols": [
+          "UNKNOWN",
+          "PRODUCT_CREATED",
+          "PRODUCT_ACTIVATED",
+          "PRODUCT_DEACTIVATED",
+          "VARIANT_ADDED",
+          "VARIANT_ACTIVATED",
+          "VARIANT_DEACTIVATED"
+        ],
+        "default": "UNKNOWN"
+      }
+    },
+    {
+      "name": "occurredAt",
+      "type": {
+        "type": "long",
+        "logicalType": "timestamp-millis"
+      }
+    },
+    {
+      "name": "productId",
+      "type": "string"
+    },
+    {
+      "name": "name",
+      "type": "string"
+    },
+    {
+      "name": "productActive",
+      "type": "boolean"
+    },
+    {
+      "name": "variants",
+      "type": {
+        "type": "array",
+        "items": {
+          "type": "record",
+          "name": "VariantSnapshot",
+          "fields": [
+            {
+              "name": "sku",
+              "type": "string"
+            },
+            {
+              "name": "volumeMl",
+              "type": "int"
+            },
+            {
+              "name": "active",
+              "type": "boolean"
+            }
+          ]
+        }
+      }
+    }
+  ]
+}

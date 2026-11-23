@@ -4,7 +4,7 @@ import com.sndbx.product.model.Product;
 import com.sndbx.product.model.Variant;
 import com.sndbx.product.model.outbox.OutboxEvent;
 import com.sndbx.product.model.outbox.OutboxStatus;
-import com.sndbx.product.model.outbox.ProductEventPayload;
+import com.sndbx.product.dto.payload.ProductEventPayload;
 import com.sndbx.product.model.outbox.ProductEventType;
 import com.sndbx.product.repository.OutboxRepository;
 import lombok.RequiredArgsConstructor;

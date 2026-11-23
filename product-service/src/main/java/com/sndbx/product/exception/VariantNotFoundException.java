@@ -1,6 +1,6 @@
 package com.sndbx.product.exception;
 
-import com.sndbx.product.config.utility.ErrorCode;
+import com.sndbx.product.exception.config.ErrorCode;
 
 public class VariantNotFoundException extends ProductServiceException {
     public VariantNotFoundException(String productId, String sku) {

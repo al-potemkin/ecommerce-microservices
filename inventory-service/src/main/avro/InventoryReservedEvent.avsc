@@ -1,9 +1,0 @@
-{
-  "type": "record",
-  "name": "InventoryReservedEvent",
-  "namespace": "com.sndbx.inventory.event",
-  "fields": [
-    { "name": "orderId", "type": { "type": "string", "logicalType": "uuid" } },
-    { "name": "email", "type": "string" }
-  ]
-}

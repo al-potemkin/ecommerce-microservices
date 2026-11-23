@@ -1,0 +1,16 @@
+CREATE TABLE outbox (
+                        id           BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+                        event_id     VARCHAR(36)  NOT NULL,
+                        aggregate_id VARCHAR(64)  NOT NULL,
+                        type         VARCHAR(32)  NOT NULL,
+                        payload      TEXT         NOT NULL,
+                        status       VARCHAR(16)  NOT NULL,
+                        created_at   TIMESTAMPTZ  NOT NULL,
+                        sent_at      TIMESTAMPTZ,
+                        attempts     INTEGER      NOT NULL DEFAULT 0,
+
+                        CONSTRAINT uq_outbox_event_id UNIQUE (event_id)
+);
+
+CREATE INDEX idx_outbox_pending ON outbox (id) WHERE status = 'PENDING';
+CREATE INDEX idx_outbox_sent_at ON outbox (sent_at) WHERE status = 'SENT';
