@@ -1,7 +1,11 @@
 package com.sndbx.inventory.exception.config;
 
+import lombok.AllArgsConstructor;
+import lombok.Getter;
 import org.springframework.http.HttpStatus;
 
+@Getter
+@AllArgsConstructor
 public enum ErrorCode {
     BAD_REQUEST(HttpStatus.BAD_REQUEST, "Bad Request", "The request is invalid"),
     VALIDATION_FAILED(HttpStatus.BAD_REQUEST, "Validation Failed", "Request validation failed"),
@@ -30,24 +34,6 @@ public enum ErrorCode {
     private final HttpStatus status;
     private final String title;
     private final String defaultDetail;
-
-    ErrorCode(HttpStatus status, String title, String defaultDetail) {
-        this.status = status;
-        this.title = title;
-        this.defaultDetail = defaultDetail;
-    }
-
-    public HttpStatus status() {
-        return status;
-    }
-
-    public String title() {
-        return title;
-    }
-
-    public String defaultDetail() {
-        return defaultDetail;
-    }
 
     public static ErrorCode fromStatus(int status) {
         for (ErrorCode code : values()) {

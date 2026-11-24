@@ -30,7 +30,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 
-    private final ProblemFactory problems;
+    private final ApiProblemFactory problems;
 
     @ExceptionHandler(InventoryServiceException.class)
     ResponseEntity<Object> handleDomain(InventoryServiceException ex, HttpServletRequest request) {

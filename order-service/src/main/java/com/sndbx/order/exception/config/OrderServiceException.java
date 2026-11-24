@@ -1,18 +1,17 @@
-package com.sndbx.inventory.exception.config;
+package com.sndbx.order.exception.config;
 
 import java.util.List;
 
-public abstract class InventoryServiceException extends RuntimeException {
+public abstract class OrderServiceException extends RuntimeException {
 
     private final ErrorCode errorCode;
     private final List<ApiProblem.FieldError> errors;
 
-    protected InventoryServiceException(ErrorCode errorCode, String detail) {
+    protected OrderServiceException(ErrorCode errorCode, String detail) {
         this(errorCode, detail, List.of());
     }
 
-    protected InventoryServiceException(ErrorCode errorCode, String detail,
-                                        List<ApiProblem.FieldError> errors) {
+    protected OrderServiceException(ErrorCode errorCode, String detail, List<ApiProblem.FieldError> errors) {
         super(detail, null, false, false);
         this.errorCode = errorCode;
         this.errors = errors;

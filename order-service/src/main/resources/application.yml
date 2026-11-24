@@ -1,6 +1,3 @@
-server:
-  port: 8082
-
 services:
   inventory:
     url: ${INVENTORY_URL:http://localhost:8082}
@@ -8,38 +5,93 @@ services:
     url: ${PRODUCT_URL:http://localhost:8080}
 
 
+
+
 spring:
   application:
     name: order-service
+  datasource:
+    url: jdbc:postgresql://${ORDER_DB_HOST:localhost}:${ORDER_DB_PORT:5432}/${ORDER_DB_NAME}
+    username: ${ORDER_DB_USER}
+    password: ${ORDER_DB_PASSWORD}
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+    properties:
+      "hibernate.jdbc.time_zone": UTC
 
   security:
     oauth2:
       resourceserver:
         jwt:
-          issuer-uri: ${KEYCLOAK_ISSUER_URI:}
-
-  # Kafka properties
-  kafka:
-    bootstrap-servers: localhost:29092,localhost:29093,localhost:29094
-    producer:
-      key-serializer: org.apache.kafka.common.serialization.UUIDSerializer
-      value-serializer: io.confluent.kafka.serializers.KafkaAvroSerializer
-      acks: all
-      retries: 2147483647
-      properties:
-        "max.in.flight.requests.per.connection": 5
-        "enable.idempotence": true
-        "schema.registry.url": http://localhost:8087
+          issuer-uri: ${JWT_ISSUER_URI}
+          jwk-set-uri: ${JWT_JWK_SET_URI}
+      client:
+        registration:
+          order-service:
+            provider: keycloak
+            client-id: order-service
+            client-secret: ${ORDER_SERVICE_SECRET}
+            authorization-grant-type: client_credentials
+        provider:
+          keycloak:
+            token-uri: ${KEYCLOAK_TOKEN_URI}
 
 management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      probes:
+        enabled: true
   tracing:
     sampling:
       probability: 1.0
-  otlp:
-    metrics:
-      export:
-        enabled: false
 
-logging:
-  pattern:
-    correlation: "[${spring.application.name:},%X{traceId:-},%X{spanId:-}] "
+springdoc:
+  api-docs:
+    enabled: false
+  swagger-ui:
+    enabled: false
+
+app:
+  clients:
+    product-service:
+      base-url: ${PRODUCT_SERVICE_URL}
+      connect-timeout: 2s
+      read-timeout: 5s
+
+#  security:
+#    oauth2:
+#      resourceserver:
+#        jwt:
+#          issuer-uri: ${KEYCLOAK_ISSUER_URI:}
+#
+#  # Kafka properties
+#  kafka:
+#    bootstrap-servers: localhost:29092,localhost:29093,localhost:29094
+#    producer:
+#      key-serializer: org.apache.kafka.common.serialization.UUIDSerializer
+#      value-serializer: io.confluent.kafka.serializers.KafkaAvroSerializer
+#      acks: all
+#      retries: 2147483647
+#      properties:
+#        "max.in.flight.requests.per.connection": 5
+#        "enable.idempotence": true
+#        "schema.registry.url": http://localhost:8087
+#
+#management:
+#  tracing:
+#    sampling:
+#      probability: 1.0
+#  otlp:
+#    metrics:
+#      export:
+#        enabled: false
+#
+#logging:
+#  pattern:
+#    correlation: "[${spring.application.name:},%X{traceId:-},%X{spanId:-}] "

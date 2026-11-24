@@ -21,8 +21,7 @@ public class SecurityConfig {
     @Bean
     SecurityFilterChain securityFilterChain(HttpSecurity http,
                                             JwtAuthenticationConverter jwtAuthenticationConverter,
-                                            ProblemAuthenticationEntryPoint entryPoint,
-                                            ProblemAccessDeniedHandler accessDeniedHandler) {
+                                            SecurityProblemHandler problemHandler) {
         http
                 .csrf(AbstractHttpConfigurer::disable)
                 .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS)).authorizeHttpRequests(auth -> auth
@@ -32,10 +31,10 @@ public class SecurityConfig {
                         .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
                         .anyRequest().authenticated())
                 .exceptionHandling(e -> e
-                        .authenticationEntryPoint(entryPoint)
-                        .accessDeniedHandler(accessDeniedHandler))
+                        .authenticationEntryPoint(problemHandler)
+                        .accessDeniedHandler(problemHandler))
                 .oauth2ResourceServer(oauth -> oauth
-                        .authenticationEntryPoint(entryPoint)
+                        .authenticationEntryPoint(problemHandler)
                         .jwt(jwt -> jwt.jwtAuthenticationConverter(jwtAuthenticationConverter)));
         return http.build();
     }

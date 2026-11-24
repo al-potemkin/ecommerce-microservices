@@ -9,18 +9,14 @@ spring:
     url: jdbc:postgresql://${INVENTORY_DB_HOST:localhost}:${INVENTORY_DB_PORT:5433}/${INVENTORY_DB_NAME:inventory}
     username: ${INVENTORY_DB_USER:inventory_app}
     password: ${INVENTORY_DB_PASSWORD}
-
   jpa:
     open-in-view: false
     hibernate:
       ddl-auto: validate
     properties:
-      hibernate:
-        jdbc:
-          time_zone: UTC
-
-  flyway:
-    enabled: true
+      "hibernate.jdbc.time_zone": UTC
+#  flyway:
+#    enabled: true # remove ?
 
   security:
     oauth2:
