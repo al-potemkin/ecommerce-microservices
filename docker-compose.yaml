@@ -8,6 +8,7 @@ services:
       PRODUCT_SERVICE_URL: http://product-service:8081
       INVENTORY_SERVICE_URL: http://inventory-service:8083
       ORDER_SERVICE_URL: http://order-service:8084
+      USER_SERVICE_URL: http://user-service:8085
       KEYCLOAK_ISSUER_URI: http://localhost:8180/realms/ecommerce
       SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI: http://keycloak:8080/realms/ecommerce/protocol/openid-connect/certs
       REDIS_HOST: redis
@@ -82,6 +83,51 @@ services:
       timeout: 3s
       retries: 10
 
+  # ----------- user-service -----------
+  user-db:
+    image: postgres:16
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${USER_DB_NAME}
+      POSTGRES_USER: ${USER_DB_USER}
+      POSTGRES_PASSWORD: ${USER_DB_PASSWORD}
+    volumes:
+      - user-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U ${USER_DB_USER} -d ${USER_DB_NAME}" ]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    ports:
+      - "5435:5432"
+    networks: [ backend, edge ]
+
+  user-service:
+    build:
+      context: ./user-service
+      dockerfile: Dockerfile
+    container_name: user-service
+    restart: unless-stopped
+    depends_on:
+      user-db:
+        condition: service_healthy
+    environment:
+      SERVER_PORT: 8085
+      SPRING_PROFILES_ACTIVE: dev #enable dev-mode
+      USER_DB_HOST: user-db
+      USER_DB_NAME: ${USER_DB_NAME}
+      USER_DB_USER: ${USER_DB_USER}
+      USER_DB_PASSWORD: ${USER_DB_PASSWORD}
+      JWT_ISSUER_URI: http://localhost:8180/realms/ecommerce #KEYCLOAK_ISSUER_URI
+      JWT_JWK_SET_URI: http://keycloak:8080/realms/ecommerce/protocol/openid-connect/certs
+    healthcheck:
+      test: [ "CMD-SHELL", "curl -fs http://localhost:8085/actuator/health/readiness > /dev/null || exit 1" ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 40s
+    networks: [ backend ]
+
   # ----------- order-service -----------
   order-db:
     image: postgres:16
@@ -136,7 +182,6 @@ services:
       retries: 10
       start_period: 40s
     networks: [ backend ]
-
 
   # --------- inventory-service ---------
   inventory-db:
@@ -362,3 +407,4 @@ volumes:
   kafka-data:
   inventory-db-data:
   order-db-data:
+  user-db-data:

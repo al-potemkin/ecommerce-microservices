@@ -22,6 +22,15 @@ spring:
             connect-timeout: 2000
             response-timeout: 5s
           routes:
+            - id: user-service
+              uri: ${USER_SERVICE_URL}
+              predicates:
+                - Path=/api/users/**
+              filters:
+                - name: CircuitBreaker
+                  args:
+                    name: user-service
+                    fallbackUri: forward:/fallback/user-service
             - id: product-service
               uri: ${PRODUCT_SERVICE_URL}
               predicates:
@@ -55,7 +64,7 @@ spring:
                 allowedOrigins:
                   - "http://localhost:3000"
                 allowedMethods: [ GET, POST, PUT, PATCH, DELETE, OPTIONS ]
-                allowedHeaders: [ Authorization, Content-Type, traceparent ]
+                allowedHeaders: [ Authorization, Content-Type, traceparent, Idempotency-Key ]
                 exposedHeaders: [ Retry-After, X-RateLimit-Remaining ]
                 allowCredentials: false
                 maxAge: 3600
