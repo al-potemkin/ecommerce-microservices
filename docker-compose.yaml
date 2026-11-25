@@ -34,6 +34,7 @@ services:
       KC_BOOTSTRAP_ADMIN_PASSWORD: ${KC_ADMIN_PASSWORD}
       KC_DB: postgres
       KC_DB_URL: jdbc:postgresql://keycloak-db:5432/${KC_DB_NAME}
+      KC_HOSTNAME: http://localhost:8180
       KC_DB_USERNAME: ${KC_DB_USER}
       KC_DB_PASSWORD: ${KC_DB_PASSWORD}
       TEST_USER_PASSWORD: ${TEST_USER_PASSWORD}
@@ -109,6 +110,10 @@ services:
     depends_on:
       order-db:
         condition: service_healthy
+      kafka:
+        condition: service_healthy
+      schema-registry:
+        condition: service_healthy
     environment:
       SERVER_PORT: 8084
       SPRING_PROFILES_ACTIVE: dev #enable dev-mod
@@ -118,18 +123,19 @@ services:
       ORDER_DB_PASSWORD: ${ORDER_DB_PASSWORD}
       JWT_ISSUER_URI: http://localhost:8180/realms/ecommerce #KEYCLOAK_ISSUER_URI
       JWT_JWK_SET_URI: http://keycloak:8080/realms/ecommerce/protocol/openid-connect/certs
-      ORDER_SERVICE_SECRET: ${ORDER_SERVICE_SECRET}
       KEYCLOAK_TOKEN_URI: http://keycloak:8080/realms/ecommerce/protocol/openid-connect/token
+      ORDER_SERVICE_SECRET: ${ORDER_SERVICE_SECRET}
       PRODUCT_SERVICE_URL: http://product-service:8081
+      INVENTORY_SERVICE_URL: http://inventory-service:8083
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      SCHEMA_REGISTRY_URL: http://schema-registry:8081
     healthcheck:
       test: [ "CMD-SHELL", "curl -fs http://localhost:8084/actuator/health/readiness > /dev/null || exit 1" ]
       interval: 10s
       timeout: 5s
       retries: 10
       start_period: 40s
-    ports:
-      - "8084:8084"
-    networks: [ backend, edge ]
+    networks: [ backend ]
 
 
   # --------- inventory-service ---------

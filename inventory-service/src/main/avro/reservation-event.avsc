@@ -1,0 +1,35 @@
+{
+  "type": "record",
+  "name": "ReservationEvent",
+  "namespace": "com.sndbx.inventory.events",
+  "doc": "Stock reservation lifecycle event.",
+  "fields": [
+    {
+      "name": "eventId",
+      "type": "string"
+    },
+    {
+      "name": "type",
+      "type": {
+        "type": "enum",
+        "name": "ReservationEventType",
+        "symbols": [
+          "UNKNOWN",
+          "RESERVATION_EXPIRED"
+        ],
+        "default": "UNKNOWN"
+      }
+    },
+    {
+      "name": "occurredAt",
+      "type": {
+        "type": "long",
+        "logicalType": "timestamp-millis"
+      }
+    },
+    {
+      "name": "orderId",
+      "type": "string"
+    }
+  ]
+}

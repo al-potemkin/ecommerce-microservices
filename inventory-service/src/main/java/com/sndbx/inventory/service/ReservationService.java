@@ -33,17 +33,19 @@ public class ReservationService {
 
     private final StockItemRepository stockRepository;
     private final ReservationRepository reservationRepository;
+    private final OutboxRecorder outboxRecorder;
     private final ReservationMapper mapper;
     private final StockAvailability availability;
     private final Duration ttl;
 
     public ReservationService(StockItemRepository stockRepository,
-                              ReservationRepository reservationRepository,
+                              ReservationRepository reservationRepository, OutboxRecorder outboxRecorder,
                               ReservationMapper mapper,
                               StockAvailability availability,
                               @Value("${app.reservation.ttl-minutes:15}") long ttlMinutes) {
         this.stockRepository = stockRepository;
         this.reservationRepository = reservationRepository;
+        this.outboxRecorder = outboxRecorder;
         this.mapper = mapper;
         this.availability = availability;
         this.ttl = Duration.ofMinutes(ttlMinutes);
@@ -108,7 +110,7 @@ public class ReservationService {
         List<Reservation> reservations = loadOrThrow(orderId);
 
         switch (reservations.getFirst().getStatus()) {
-            case COMMITTED -> {
+            case COMMITTED, RETURNED -> {
                 return mapper.toResponse(orderId, reservations);
             }
             case RELEASED -> throw new ReservationConflictException(ErrorCode.RESERVATION_RELEASED,
@@ -134,7 +136,7 @@ public class ReservationService {
             case RELEASED -> {
                 return mapper.toResponse(orderId, reservations);
             }
-            case COMMITTED -> throw new ReservationConflictException(ErrorCode.RESERVATION_ALREADY_COMMITTED,
+            case COMMITTED, RETURNED -> throw new ReservationConflictException(ErrorCode.RESERVATION_ALREADY_COMMITTED,
                     "Reservation for order " + orderId + " is already committed and cannot be released");
             case RESERVED -> {
                 for (Reservation reservation : reservations) {
@@ -147,6 +149,39 @@ public class ReservationService {
             }
         }
         return mapper.toResponse(orderId, reservations);
+    }
+
+    @Transactional
+    public void returnToStock(String orderId) {
+        stockRepository.lockByOrderId(orderId);
+        List<Reservation> reservations = loadOrThrow(orderId);
+
+        switch (reservations.getFirst().getStatus()) {
+            case RETURNED -> {
+                return;
+            }
+            case RESERVED, RELEASED -> throw new ReservationConflictException(ErrorCode.CONFLICT,
+                    "Order " + orderId + " was not committed, nothing to return to stock");
+            case COMMITTED -> {
+                for (Reservation reservation : reservations) {
+                    StockItem item = reservation.getStockItem();
+                    int availableBefore = availability.of(item);
+                    item.setOnHand(item.getOnHand() + reservation.getQuantity());
+                    reservation.setStatus(ReservationStatus.RETURNED);
+                    availability.recordChange(item, availableBefore);
+                }
+            }
+        }
+    }
+
+    @Transactional
+    public void expire(String orderId) {
+        stockRepository.lockByOrderId(orderId);
+        boolean stillReserved = loadOrThrow(orderId).getFirst().getStatus() == ReservationStatus.RESERVED;
+        release(orderId);
+        if (stillReserved) {
+            outboxRecorder.recordReservationExpired(orderId);
+        }
     }
 
     @Transactional(readOnly = true)

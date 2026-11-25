@@ -1,6 +1,6 @@
 package com.sndbx.order.config.client;
 
-import com.sndbx.order.config.client.ServiceClientFactory;
+import com.sndbx.order.client.ProductClient;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;

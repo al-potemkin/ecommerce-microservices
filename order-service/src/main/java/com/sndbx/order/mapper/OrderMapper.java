@@ -1,34 +1,48 @@
 package com.sndbx.order.mapper;
 
-import com.sndbx.order.dto.OrderRequest;
-import com.sndbx.order.dto.OrderResponse;
+import com.sndbx.order.dto.client.VariantInfo;
+import com.sndbx.order.dto.request.DeliveryRequest;
+import com.sndbx.order.dto.response.DeliveryResponse;
+import com.sndbx.order.dto.response.OrderItemResponse;
+import com.sndbx.order.dto.response.OrderResponse;
+import com.sndbx.order.dto.response.OrderSummaryResponse;
 import com.sndbx.order.entity.Order;
-//import com.sndbx.order.event.OrderPlacedEvent;
+import com.sndbx.order.entity.OrderItem;
+import org.mapstruct.BeanMapping;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
-import org.springframework.security.oauth2.jwt.Jwt;
-
-import java.math.BigDecimal;
-import java.util.List;
-import java.util.UUID;
+import org.mapstruct.MappingTarget;
 
 @Mapper(componentModel = "spring")
 public interface OrderMapper {
+
+    @Mapping(target = "delivery", source = "order")
+    OrderResponse toResponse(Order order);
+
+    @Mapping(target = "city", source = "deliveryCity")
+    @Mapping(target = "address", source = "deliveryAddress")
+    DeliveryResponse toDelivery(Order order);
+
+    @Mapping(target = "lineTotal",
+            expression = "java(item.getUnitPrice().multiply(java.math.BigDecimal.valueOf(item.getQuantity())))")
+    OrderItemResponse toItemResponse(OrderItem item);
+
+    @BeanMapping(ignoreByDefault = true)
+    @Mapping(target = "recipientName", source = "recipientName")
+    @Mapping(target = "recipientPhone", source = "recipientPhone")
+    @Mapping(target = "deliveryCity", source = "city")
+    @Mapping(target = "deliveryAddress", source = "address")
+    void applyDelivery(DeliveryRequest delivery, @MappingTarget Order order);
+
     @Mapping(target = "id", ignore = true)
-    @Mapping(target = "orderId", expression = "java(UUID.randomUUID())")
-    @Mapping(target = "productId", source = "input.productId")
-    @Mapping(target = "quantity", source = "input.quantity")
-    @Mapping(target = "price", source = "price")
-    @Mapping(target = "email", expression = "java(jwt.getClaimAsString(\"email\"))")
-    @Mapping(target = "firstName", expression = "java(jwt.getClaimAsString(\"given_name\"))")
-    @Mapping(target = "lastName", expression = "java(jwt.getClaimAsString(\"family_name\"))")
-    @Mapping(target = "userId", source = "jwt.subject")
-    Order toOrder(OrderRequest input, Jwt jwt, UUID orderId, BigDecimal price);
+    @Mapping(target = "order", ignore = true)
+    @Mapping(target = "sku", source = "variant.sku")
+    @Mapping(target = "productId", source = "variant.productId")
+    @Mapping(target = "productName", source = "variant.name")
+    @Mapping(target = "volumeMl", source = "variant.volumeMl")
+    @Mapping(target = "unitPrice", source = "variant.price")
+    @Mapping(target = "quantity", source = "quantity")
+    OrderItem toItem(VariantInfo variant, int quantity);
 
-    @Mapping(target = "orderId", source = "orderId")
-    OrderPlacedEvent toOrderPlacedEvent(OrderRequest input, UUID orderId);
-
-    OrderResponse toOrderResponse(Order input);
-
-    List<OrderResponse> toOrderResponse(List<Order> input);
+    OrderSummaryResponse toSummary(Order order);
 }

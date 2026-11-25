@@ -1,6 +1,6 @@
 package com.sndbx.inventory.mapper;
 
-import com.sndbx.inventory.dto.PageResponse;
+import com.sndbx.inventory.dto.response.PageResponse;
 import com.sndbx.inventory.dto.response.StockItemResponse;
 import com.sndbx.inventory.entity.StockItem;
 import org.mapstruct.Mapper;

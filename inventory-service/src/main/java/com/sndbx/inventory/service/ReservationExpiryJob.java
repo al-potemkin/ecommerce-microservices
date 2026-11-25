@@ -30,8 +30,8 @@ public class ReservationExpiryJob {
 
         for (String orderId : orderIds) {
             try {
-                reservationService.release(orderId);
-                log.info("Released expired reservation for order {}", orderId);
+                reservationService.expire(orderId);
+                log.info("Expired reservation for order {}", orderId);
             } catch (ReservationConflictException | OptimisticLockingFailureException e) {
                 log.info("Skipped expired reservation for order {}: {}", orderId, e.getMessage());
             } catch (Exception e) {

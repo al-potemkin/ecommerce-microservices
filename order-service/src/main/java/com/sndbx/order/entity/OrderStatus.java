@@ -15,7 +15,7 @@ public enum OrderStatus {
     public Set<OrderStatus> allowedTransitions() {
         return switch (this) {
             case AWAITING_PAYMENT -> EnumSet.of(PAID, CANCELLED, EXPIRED);
-            case PAID -> EnumSet.of(SHIPPED);
+            case PAID -> EnumSet.of(SHIPPED, RETURN_REQUESTED);
             case SHIPPED -> EnumSet.of(RETURN_REQUESTED);
             case RETURN_REQUESTED -> EnumSet.of(RETURNED);
             case RETURNED, CANCELLED, EXPIRED -> EnumSet.noneOf(OrderStatus.class);

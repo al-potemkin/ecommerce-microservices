@@ -1,0 +1,36 @@
+{
+  "type": "record",
+  "name": "PaymentEvent",
+  "namespace": "com.sndbx.payment.events",
+  "doc": "Payment result for an order.",
+  "fields": [
+    {
+      "name": "eventId",
+      "type": "string"
+    },
+    {
+      "name": "type",
+      "type": {
+        "type": "enum",
+        "name": "PaymentEventType",
+        "symbols": [
+          "UNKNOWN",
+          "PAYMENT_SUCCEEDED",
+          "PAYMENT_FAILED"
+        ],
+        "default": "UNKNOWN"
+      }
+    },
+    {
+      "name": "occurredAt",
+      "type": {
+        "type": "long",
+        "logicalType": "timestamp-millis"
+      }
+    },
+    {
+      "name": "orderId",
+      "type": "string"
+    }
+  ]
+}

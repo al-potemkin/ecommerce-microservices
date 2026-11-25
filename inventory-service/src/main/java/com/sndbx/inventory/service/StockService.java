@@ -1,6 +1,6 @@
 package com.sndbx.inventory.service;
 
-import com.sndbx.inventory.dto.PageResponse;
+import com.sndbx.inventory.dto.response.PageResponse;
 import com.sndbx.inventory.dto.response.StockItemResponse;
 import com.sndbx.inventory.entity.StockItem;
 import com.sndbx.inventory.exception.StockBelowReservedException;

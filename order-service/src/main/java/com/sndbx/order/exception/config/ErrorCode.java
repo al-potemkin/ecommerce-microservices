@@ -22,6 +22,11 @@ public enum ErrorCode {
     CONFLICT(HttpStatus.CONFLICT, "Conflict", "The request conflicts with the current state of the resource"),
     INVALID_ORDER_TRANSITION(HttpStatus.CONFLICT, "Invalid Order Transition", "The order cannot move to the requested status"),
     CONCURRENT_MODIFICATION(HttpStatus.CONFLICT, "Concurrent Modification", "The resource was modified by another request, please retry"),
+    INSUFFICIENT_STOCK(HttpStatus.CONFLICT, "Insufficient Stock", "Not enough stock for the requested items"),
+    RESERVATION_RELEASED(HttpStatus.CONFLICT, "Reservation Released", "The stock reservation was released or expired"),
+    RESERVATION_ALREADY_COMMITTED(HttpStatus.CONFLICT, "Reservation Already Committed", "The stock reservation is already committed"),
+    ITEMS_UNAVAILABLE(HttpStatus.CONFLICT, "Items Unavailable", "Some items are not available for purchase"),
+    RETURN_WINDOW_EXPIRED(HttpStatus.CONFLICT, "Return Window Expired", "The return period for this order has expired"),
 
     INTERNAL_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "Internal Server Error", "An unexpected error occurred"),
     SERVICE_UNAVAILABLE(HttpStatus.SERVICE_UNAVAILABLE, "Service Unavailable", "The service is temporarily unavailable, please try again later"),

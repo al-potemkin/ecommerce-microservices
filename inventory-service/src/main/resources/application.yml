@@ -15,8 +15,6 @@ spring:
       ddl-auto: validate
     properties:
       "hibernate.jdbc.time_zone": UTC
-#  flyway:
-#    enabled: true # remove ?
 
   security:
     oauth2:
@@ -77,6 +75,7 @@ app:
     schema-registry-url: ${SCHEMA_REGISTRY_URL}
     topics:
       product-events: product-events
+      order-events: order-events
     retry:
       max-retries: 3
       initial-interval-ms: 1000

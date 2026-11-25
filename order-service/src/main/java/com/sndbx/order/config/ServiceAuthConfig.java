@@ -13,15 +13,17 @@ import org.springframework.security.oauth2.client.web.client.OAuth2ClientHttpReq
 @Configuration
 public class ServiceAuthConfig {
 
-    public static final String REGISTRATION_ID = "order-service";
+    private static final String REGISTRATION_ID = "order-service";
 
     @Bean
     OAuth2AuthorizedClientManager serviceAuthorizedClientManager(ClientRegistrationRepository registrations,
                                                                  OAuth2AuthorizedClientService clients) {
-        AuthorizedClientServiceOAuth2AuthorizedClientManager manager =
-                new AuthorizedClientServiceOAuth2AuthorizedClientManager(registrations, clients);
+        AuthorizedClientServiceOAuth2AuthorizedClientManager manager = new AuthorizedClientServiceOAuth2AuthorizedClientManager(registrations, clients);
         manager.setAuthorizedClientProvider(
-                OAuth2AuthorizedClientProviderBuilder.builder().clientCredentials().build());
+                OAuth2AuthorizedClientProviderBuilder.builder()
+                        .clientCredentials()
+                        .build()
+        );
         return manager;
     }
 

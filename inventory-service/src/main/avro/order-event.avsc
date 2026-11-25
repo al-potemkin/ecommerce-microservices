@@ -1,0 +1,78 @@
+{
+  "type": "record",
+  "name": "OrderEvent",
+  "namespace": "com.sndbx.order.events",
+  "doc": "Order lifecycle event. Carries the order state at the moment of the change.",
+  "fields": [
+    {
+      "name": "eventId",
+      "type": "string"
+    },
+    {
+      "name": "type",
+      "type": {
+        "type": "enum",
+        "name": "OrderEventType",
+        "symbols": [
+          "UNKNOWN",
+          "ORDER_CREATED",
+          "ORDER_PAID",
+          "ORDER_CANCELLED",
+          "ORDER_EXPIRED",
+          "ORDER_SHIPPED",
+          "ORDER_RETURN_REQUESTED",
+          "ORDER_RETURNED"
+        ],
+        "default": "UNKNOWN"
+      }
+    },
+    {
+      "name": "occurredAt",
+      "type": {
+        "type": "long",
+        "logicalType": "timestamp-millis"
+      }
+    },
+    {
+      "name": "orderId",
+      "type": "string"
+    },
+    {
+      "name": "userId",
+      "type": "string"
+    },
+    {
+      "name": "status",
+      "type": "string"
+    },
+    {
+      "name": "totalAmount",
+      "type": "string",
+      "doc": "Order total in UAH, e.g. 1234.50"
+    },
+    {
+      "name": "items",
+      "type": {
+        "type": "array",
+        "items": {
+          "type": "record",
+          "name": "OrderItemSnapshot",
+          "fields": [
+            {
+              "name": "sku",
+              "type": "string"
+            },
+            {
+              "name": "quantity",
+              "type": "int"
+            },
+            {
+              "name": "unitPrice",
+              "type": "string"
+            }
+          ]
+        }
+      }
+    }
+  ]
+}

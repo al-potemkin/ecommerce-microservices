@@ -1,4 +1,4 @@
-package com.sndbx.inventory.dto;
+package com.sndbx.order.dto.response;
 
 import java.util.List;
 

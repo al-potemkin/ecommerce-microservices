@@ -24,6 +24,10 @@
         "description": "Inventory management (inventory-service)"
       },
       {
+        "name": "ORDER_MANAGER",
+        "description": "Order management (order-service)"
+      },
+      {
         "name": "INTERNAL_SERVICE",
         "description": "Service-to-service calls without a user"
       }
@@ -151,7 +155,8 @@
       ],
       "realmRoles": [
         "PRODUCT_MANAGER",
-        "INVENTORY_MANAGER"
+        "INVENTORY_MANAGER",
+        "ORDER_MANAGER"
       ]
     },
     {
@@ -188,6 +193,24 @@
       ],
       "realmRoles": [
         "PRODUCT_MANAGER"
+      ]
+    },
+    {
+      "username": "orderuser",
+      "email": "orderuser@example.com",
+      "emailVerified": true,
+      "firstName": "Order",
+      "lastName": "User",
+      "enabled": true,
+      "credentials": [
+        {
+          "type": "password",
+          "value": "${TEST_USER_PASSWORD}",
+          "temporary": false
+        }
+      ],
+      "realmRoles": [
+        "ORDER_MANAGER"
       ]
     },
     {

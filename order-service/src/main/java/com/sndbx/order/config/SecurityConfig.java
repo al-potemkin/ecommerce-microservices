@@ -27,7 +27,10 @@ public class SecurityConfig {
                 .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/actuator/health/**").permitAll()
+                        .requestMatchers("/api/order/manage/**").hasRole("ORDER_MANAGER")
+                        .requestMatchers("/api/orders/dev/**").hasRole("ORDER_MANAGER") // TODO: remove after payment-service impl
                         .requestMatchers("/internal/**").hasRole("INTERNAL_SERVICE")
+                        .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
                         .anyRequest().authenticated())
                 .exceptionHandling(e -> e
                         .authenticationEntryPoint(problemHandler)

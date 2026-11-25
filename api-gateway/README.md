@@ -30,7 +30,7 @@ The single entry point for clients of the e-commerce system. It hides the intern
 |---|---|---|
 | `/api/products/**` | GET | public, no token |
 | `/api/products/**` | others | role `PRODUCT_MANAGER` |
-| `/api/orders/**` | any | any valid token |
+| `/api/order/**` | any | any valid token |
 | `/api/inventory/**` | any | role `INVENTORY_MANAGER` |
 | `/actuator/health/**` | GET | public |
 | `/actuator/**` (other endpoints) | any | valid token, and only if the endpoint is exposed (`dev`) |
@@ -49,7 +49,7 @@ Rules are evaluated top to bottom and the first match wins, so public paths come
   "title": "Unauthorized",
   "status": 401,
   "detail": "Authentication is required to access this resource",
-  "instance": "/api/orders",
+  "instance": "/api/order",
   "code": "UNAUTHORIZED",
   "timestamp": "2026-11-19T01:30:00Z",
   "traceId": "4bf92f3577b34da6a3ce929d0e0e4736",

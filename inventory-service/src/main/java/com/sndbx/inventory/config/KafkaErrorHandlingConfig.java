@@ -1,5 +1,7 @@
 package com.sndbx.inventory.config;
 
+import com.sndbx.inventory.exception.ReservationConflictException;
+import com.sndbx.inventory.exception.ReservationNotFoundException;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.common.serialization.ByteArraySerializer;
@@ -50,7 +52,11 @@ public class KafkaErrorHandlingConfig {
         backOff.setMaxInterval(maxIntervalMs);
 
         DefaultErrorHandler handler = new DefaultErrorHandler(recoverer, backOff);
-        handler.addNotRetryableExceptions(DataIntegrityViolationException.class);
+        handler.addNotRetryableExceptions(
+                DataIntegrityViolationException.class,
+                ReservationNotFoundException.class,
+                ReservationConflictException.class
+        );
         return handler;
     }
 }

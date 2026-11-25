@@ -2,10 +2,11 @@ package com.sndbx.inventory.service;
 
 import com.sndbx.inventory.config.KafkaTopicConfig;
 import com.sndbx.inventory.dto.payload.InventoryEventPayload;
+import com.sndbx.inventory.dto.payload.ReservationEventPayload;
 import com.sndbx.inventory.entity.outbox.OutboxEvent;
 import com.sndbx.inventory.entity.outbox.OutboxStatus;
-import com.sndbx.inventory.events.InventoryEvent;
-import com.sndbx.inventory.mapper.InventoryEventAvroMapper;
+import com.sndbx.inventory.entity.outbox.StockEventType;
+import com.sndbx.inventory.mapper.EventAvroMapper;
 import com.sndbx.inventory.repository.OutboxRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -28,8 +29,8 @@ public class OutboxRelay {
     private static final long SEND_TIMEOUT_SECONDS = 10;
 
     private final OutboxRepository repository;
-    private final KafkaTemplate<String, InventoryEvent> kafkaTemplate;
-    private final InventoryEventAvroMapper avroMapper;
+    private final KafkaTemplate<String, Object> kafkaTemplate;
+    private final EventAvroMapper avroMapper;
     private final ObjectMapper objectMapper;
 
     @Scheduled(fixedDelayString = "${app.outbox.poll-delay-ms:1000}")
@@ -45,9 +46,20 @@ public class OutboxRelay {
 
     private boolean send(OutboxEvent event) {
         try {
-            InventoryEvent message = avroMapper.toAvro(
-                    objectMapper.readValue(event.getPayload(), InventoryEventPayload.class));
-            kafkaTemplate.send(KafkaTopicConfig.INVENTORY_EVENTS, event.getAggregateId(), message)
+            String topic;
+            Object message;
+            if (event.getType() == StockEventType.RESERVATION_EXPIRED) {
+                topic = KafkaTopicConfig.RESERVATION_EVENTS;
+                message = avroMapper.toAvro(
+                        objectMapper.readValue(event.getPayload(), ReservationEventPayload.class)
+                );
+            } else {
+                topic = KafkaTopicConfig.INVENTORY_EVENTS;
+                message = avroMapper.toAvro(
+                        objectMapper.readValue(event.getPayload(), InventoryEventPayload.class)
+                );
+            }
+            kafkaTemplate.send(topic, event.getAggregateId(), message)
                     .get(SEND_TIMEOUT_SECONDS, TimeUnit.SECONDS);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();

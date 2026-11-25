@@ -8,7 +8,10 @@ import org.springframework.kafka.config.TopicBuilder;
 @Configuration
 public class KafkaTopicConfig {
     public static final String INVENTORY_EVENTS = "inventory-events";
+    public static final String RESERVATION_EVENTS = "reservation-events";
     private static final String INVENTORY_EVENTS_DLT = "inventory-events.DLT";
+    private static final String RESERVATION_EVENTS_DLT = "reservation-events.DLT";
+
 
     @Bean
     public NewTopic inventoryEventsTopic() {
@@ -21,6 +24,22 @@ public class KafkaTopicConfig {
     @Bean
     public NewTopic inventoryEventsDltTopic() {
         return TopicBuilder.name(INVENTORY_EVENTS_DLT)
+                .partitions(1)
+                .replicas(1)
+                .build();
+    }
+
+    @Bean
+    public NewTopic reservationEventsTopic() {
+        return TopicBuilder.name(RESERVATION_EVENTS)
+                .partitions(3)
+                .replicas(1)
+                .build();
+    }
+
+    @Bean
+    NewTopic reservationEventsDltTopic() {
+        return TopicBuilder.name(RESERVATION_EVENTS_DLT)
                 .partitions(1)
                 .replicas(1)
                 .build();

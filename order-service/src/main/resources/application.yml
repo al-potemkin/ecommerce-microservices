@@ -10,6 +10,8 @@ services:
 spring:
   application:
     name: order-service
+  lifecycle:
+    timeout-per-shutdown-phase: 20s
   datasource:
     url: jdbc:postgresql://${ORDER_DB_HOST:localhost}:${ORDER_DB_PORT:5432}/${ORDER_DB_NAME}
     username: ${ORDER_DB_USER}
@@ -38,7 +40,31 @@ spring:
           keycloak:
             token-uri: ${KEYCLOAK_TOKEN_URI}
 
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS}
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: io.confluent.kafka.serializers.KafkaAvroSerializer
+      properties:
+        "[max.block.ms]": 5000
+        "[schema.registry.url]": ${SCHEMA_REGISTRY_URL}
+        "[auto.register.schemas]": true
+        "[avro.remove.java.properties]": true
+    consumer:
+      group-id: order-service
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.ErrorHandlingDeserializer
+      properties:
+        "[spring.deserializer.value.delegate.class]": io.confluent.kafka.serializers.KafkaAvroDeserializer
+        "[schema.registry.url]": ${SCHEMA_REGISTRY_URL}
+        "[specific.avro.reader]": true
+
 management:
+  otlp:
+    metrics:
+      export:
+        enabled: false
   endpoints:
     web:
       exposure:
@@ -50,6 +76,13 @@ management:
   tracing:
     sampling:
       probability: 1.0
+    export:
+      otlp:
+        enabled: false
+  logging:
+    export:
+      otlp:
+        enabled: false
 
 springdoc:
   api-docs:
@@ -58,11 +91,32 @@ springdoc:
     enabled: false
 
 app:
+  order:
+    return-window-days: 14
   clients:
     product-service:
       base-url: ${PRODUCT_SERVICE_URL}
       connect-timeout: 2s
       read-timeout: 5s
+    inventory-service:
+      base-url: ${INVENTORY_SERVICE_URL}
+      connect-timeout: 2s
+      read-timeout: 5s
+  kafka:
+    topics:
+      payment-events: payment-events
+      reservation-events: reservation-events
+    retry:
+      max-retries: 3
+      initial-interval-ms: 1000
+      multiplier: 2.0
+      max-interval-ms: 10000
+  outbox:
+    poll-delay-ms: 1000
+    retention-days: 7
+
+server:
+  shutdown: graceful
 
 #  security:
 #    oauth2:

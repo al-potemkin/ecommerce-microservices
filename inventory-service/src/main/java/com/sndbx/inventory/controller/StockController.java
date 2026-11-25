@@ -1,6 +1,6 @@
 package com.sndbx.inventory.controller;
 
-import com.sndbx.inventory.dto.PageResponse;
+import com.sndbx.inventory.dto.response.PageResponse;
 import com.sndbx.inventory.dto.request.ReceiveStockRequest;
 import com.sndbx.inventory.dto.request.SetOnHandRequest;
 import com.sndbx.inventory.dto.response.StockItemResponse;
