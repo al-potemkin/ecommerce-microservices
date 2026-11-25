@@ -1,9 +1,10 @@
-package com.sndbx.user.dto;
+package com.sndbx.user.dto.response;
 
 public record ProfileResponse(
         String firstName,
         String lastName,
         String email,
-        String phone
+        String phone,
+        AddressResponse address
 ) {
 }

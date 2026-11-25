@@ -22,6 +22,15 @@ spring:
             connect-timeout: 2000
             response-timeout: 5s
           routes:
+            - id: user-service
+              uri: ${USER_SERVICE_URL}
+              predicates:
+                - Path=/api/users/**
+              filters:
+                - name: CircuitBreaker
+                  args:
+                    name: user-service
+                    fallbackUri: forward:/fallback/user-service
             - id: product-service
               uri: ${PRODUCT_SERVICE_URL}
               predicates:

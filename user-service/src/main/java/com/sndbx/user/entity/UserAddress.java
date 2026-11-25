@@ -1,14 +1,22 @@
 package com.sndbx.user.entity;
 
-import jakarta.persistence.*;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.MapsId;
+import jakarta.persistence.OneToOne;
+import jakarta.persistence.Table;
+import jakarta.persistence.Version;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
-import org.springframework.data.annotation.Id;
 
 import java.time.Instant;
+import java.util.UUID;
 
 @Entity
 @Table(name = "user_address")
@@ -18,30 +26,21 @@ import java.time.Instant;
 public class UserAddress {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    @Column(name = "profile_id", nullable = false, updatable = false)
+    private UUID id;
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "profile_id", nullable = false, updatable = false)
+    @MapsId
+    @OneToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "profile_id")
     private UserProfile profile;
 
-    @Column(name = "recipient_name", nullable = false)
-    private String recipientName;
-
-    @Column(nullable = false)
-    private String phone;
-
-    @Column(nullable = false)
     private String city;
 
-    @Column(name = "address_line", nullable = false)
+    @Column(name = "address_line")
     private String addressLine;
 
     @Column(name = "postal_code")
     private String postalCode;
-
-    @Column(name = "is_default", nullable = false)
-    private boolean defaultAddress;
 
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)

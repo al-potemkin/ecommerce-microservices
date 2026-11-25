@@ -38,6 +38,7 @@ public class OpenApiConfig {
     RouteLocator openApiRouteLocator(RouteLocatorBuilder builder,
                                      @Value("${PRODUCT_SERVICE_URL}") String productUri,
                                      @Value("${ORDER_SERVICE_URL}") String orderUri,
+                                     @Value("${USER_SERVICE_URL}") String userUri,
                                      @Value("${INVENTORY_SERVICE_URL}") String inventoryUri) {
         return builder.routes()
                 .route("product-openapi", r -> r.path(OPENAPI_PATH.formatted("product-service"))
@@ -49,6 +50,9 @@ public class OpenApiConfig {
                 .route("order-openapi", r -> r.path(OPENAPI_PATH.formatted("order-service"))
                         .filters(f -> f.rewritePath(OPENAPI_PATH.formatted("order-service"), V3_API_DOCS))
                         .uri(orderUri))
+                .route("user-openapi", r -> r.path(OPENAPI_PATH.formatted("user-service"))
+                        .filters(f -> f.rewritePath(OPENAPI_PATH.formatted("user-service"), V3_API_DOCS))
+                        .uri(userUri))
                 .build();
     }
 }

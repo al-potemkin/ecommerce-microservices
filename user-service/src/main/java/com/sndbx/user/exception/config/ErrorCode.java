@@ -14,7 +14,6 @@ public enum ErrorCode {
     FORBIDDEN(HttpStatus.FORBIDDEN, "Forbidden", "You do not have permission to access this resource"),
 
     NOT_FOUND(HttpStatus.NOT_FOUND, "Not Found", "The requested resource was not found"),
-    ADDRESS_NOT_FOUND(HttpStatus.NOT_FOUND, "Address Not Found", "No address exists with this id"),
     METHOD_NOT_ALLOWED(HttpStatus.METHOD_NOT_ALLOWED, "Method Not Allowed", "The HTTP method is not supported for this resource"),
     NOT_ACCEPTABLE(HttpStatus.NOT_ACCEPTABLE, "Not Acceptable", "The requested response format is not supported"),
     UNSUPPORTED_MEDIA_TYPE(HttpStatus.UNSUPPORTED_MEDIA_TYPE, "Unsupported Media Type", "The request content type is not supported"),

@@ -1,12 +1,18 @@
 package com.sndbx.user.entity;
 
-import jakarta.persistence.*;
+import jakarta.persistence.CascadeType;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.Id;
+import jakarta.persistence.OneToOne;
+import jakarta.persistence.Table;
+import jakarta.persistence.Version;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
-import org.springframework.data.annotation.Id;
 
 import java.time.Instant;
 import java.util.UUID;
@@ -19,11 +25,8 @@ import java.util.UUID;
 public class UserProfile {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
-
-    @Column(name = "keycloak_user_id", nullable = false, unique = true, updatable = false)
-    private UUID keycloakUserId;
+    @Column(name = "id", nullable = false, updatable = false)
+    private UUID id; // Keycloak user id (sub)
 
     @Column(name = "first_name")
     private String firstName;
@@ -34,6 +37,9 @@ public class UserProfile {
     private String email;
 
     private String phone;
+
+    @OneToOne(mappedBy = "profile", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private UserAddress address;
 
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
