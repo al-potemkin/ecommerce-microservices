@@ -1,1 +1,124 @@
-#todo
+# Dev-настройки. Подхватывается автоматически: docker compose up -d
+#
+# Группы запуска (profiles).
+#   api-gateway, keycloak, keycloak-db, redis
+# Примеры:
+#   docker compose --profile user up -d                                           # ядро + user-service
+#   docker compose --profile order --profile catalog --profile inventory up -d    # цепочка заказа
+#   docker compose --profile "*" up -d                                            # всё сразу
+
+services:
+  # ----------- ядро -----------
+  keycloak:
+    command: [ "start-dev", "--import-realm" ]
+    environment:
+      TEST_USER_PASSWORD: ${TEST_USER_PASSWORD}
+      NOTIFICATION_SERVICE_SECRET: ${NOTIFICATION_SERVICE_SECRET}
+      PRODUCT_SERVICE_SECRET: ${PRODUCT_SERVICE_SECRET}
+      ORDER_SERVICE_SECRET: ${ORDER_SERVICE_SECRET}
+      INVENTORY_SERVICE_SECRET: ${INVENTORY_SERVICE_SECRET}
+      ANALYTICS_SERVICE_SECRET: ${ANALYTICS_SERVICE_SECRET}
+      DLT_PROCESSOR_SERVICE_SECRET: ${DLT_PROCESSOR_SERVICE_SECRET}
+    ports:
+      - "127.0.0.1:8180:8080"
+    volumes:
+      - ./api-gateway/keycloak:/opt/keycloak/data/import
+
+  api-gateway:
+    environment:
+      SPRING_PROFILES_ACTIVE: dev
+
+  redis:
+    ports:
+      - "127.0.0.1:6379:6379"
+    networks: [ backend, edge ]
+
+  # ----------- user -----------
+  user-db:
+    profiles: [ user ]
+    ports:
+      - "127.0.0.1:5435:5432"
+    networks: [ backend, edge ]
+
+  user-service:
+    profiles: [ user ]
+    environment:
+      SPRING_PROFILES_ACTIVE: dev
+    ports:
+      - "127.0.0.1:8085:8080"
+    networks: [ backend, edge ]
+
+  # ----------- order -----------
+  order-db:
+    profiles: [ order ]
+    ports:
+      - "127.0.0.1:5434:5432"
+    networks: [ backend, edge ]
+
+  order-service:
+    profiles: [ order ]
+    environment:
+      SPRING_PROFILES_ACTIVE: dev
+    ports:
+      - "127.0.0.1:8084:8080"
+    networks: [ backend, edge ]
+
+  # ----------- inventory -----------
+  inventory-db:
+    profiles: [ inventory ]
+    ports:
+      - "127.0.0.1:5433:5432"
+    networks: [ backend, edge ]
+
+  inventory-service:
+    profiles: [ inventory ]
+    environment:
+      SPRING_PROFILES_ACTIVE: dev
+    ports:
+      - "127.0.0.1:8083:8080"
+    networks: [ backend, edge ]
+
+  # ----------- catalog (product) -----------
+  product-service:
+    profiles: [ catalog ]
+    environment:
+      SPRING_PROFILES_ACTIVE: dev
+    ports:
+      - "127.0.0.1:8081:8080"
+    networks: [ backend, edge ]
+
+  product-mongo:
+    profiles: [ catalog ]
+    ports:
+      - "127.0.0.1:27017:27017"
+    networks: [ backend, edge ]
+    # volumes:
+    #   - ./product-service/docker/mongo/seed-products.js:/docker-entrypoint-initdb.d/seed-products.js:ro
+
+  product-redis:
+    profiles: [ catalog ]
+    ports:
+      - "127.0.0.1:6380:6379"
+    networks: [ backend, edge ]
+
+  # ----------- kafka -----------
+  kafka:
+    profiles: [ kafka, catalog, inventory, order ]
+
+  schema-registry:
+    profiles: [ kafka, catalog, inventory, order ]
+
+  kafka-ui:
+    profiles: [ kafka ]
+    image: provectuslabs/kafka-ui:v0.7.2
+    ports:
+      - "127.0.0.1:8082:8080"
+    environment:
+      KAFKA_CLUSTERS_0_NAME: local
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:9092
+      KAFKA_CLUSTERS_0_SCHEMAREGISTRY: http://schema-registry:8081
+      DYNAMIC_CONFIG_ENABLED: "false"
+    depends_on:
+      kafka:
+        condition: service_healthy
+    networks: [ backend, edge ]

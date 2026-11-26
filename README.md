@@ -1,3 +1,5 @@
+# Run: docker compose up -d
+
 ## TODO:
 1. Dockerfile привести к общему виду
 2. Закрыть порты, оставить только api-gateway

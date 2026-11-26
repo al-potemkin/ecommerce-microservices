@@ -1,27 +1,69 @@
+# ---------- General blocks ----------
+x-logging: &logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
+
+x-spring-healthcheck: &spring-healthcheck
+  test: [ "CMD", "curl", "-fso", "/dev/null", "http://localhost:8080/actuator/health/readiness" ]
+  interval: 10s
+  timeout: 5s
+  retries: 10
+  start_period: 40s
+
+x-pg-healthcheck: &pg-healthcheck
+  test: [ "CMD-SHELL", "pg_isready -h 127.0.0.1 -U $${POSTGRES_USER} -d $${POSTGRES_DB}" ]
+  interval: 5s
+  timeout: 3s
+  retries: 10
+
+x-redis-healthcheck: &redis-healthcheck
+  test: [ "CMD-SHELL", "redis-cli -a \"$$REDIS_PASSWORD\" --no-auth-warning ping | grep -q PONG" ]
+  interval: 10s
+  timeout: 5s
+  retries: 5
+
+x-spring-service: &spring-service
+  restart: unless-stopped
+  networks: [ backend ]
+  healthcheck: *spring-healthcheck
+  logging: *logging
+
+x-postgres: &postgres
+  image: postgres:16
+  restart: unless-stopped
+  networks: [ backend ]
+  healthcheck: *pg-healthcheck
+  logging: *logging
+
+# Публичный issuer (то, что попадает в claim iss) и внутренний JWK-адрес внутри сети compose.
+x-jwt-env: &jwt-env
+  JWT_ISSUER_URI: ${KC_PUBLIC_URL:?KC_PUBLIC_URL is required}/realms/${KC_REALM:-ecommerce}
+  JWT_JWK_SET_URI: http://keycloak:8080/realms/${KC_REALM:-ecommerce}/protocol/openid-connect/certs
+
+x-kafka-client-env: &kafka-client-env
+  KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+  SCHEMA_REGISTRY_URL: http://schema-registry:8081
+
 services:
+  # ----------- auth -----------
   api-gateway:
+    <<: *spring-service
     build: ./api-gateway
-    restart: unless-stopped
-    container_name: api-gateway
     environment:
-      SPRING_PROFILES_ACTIVE: dev #enable dev-mode
-      PRODUCT_SERVICE_URL: http://product-service:8081
-      INVENTORY_SERVICE_URL: http://inventory-service:8083
-      ORDER_SERVICE_URL: http://order-service:8084
-      USER_SERVICE_URL: http://user-service:8085
-      KEYCLOAK_ISSUER_URI: http://localhost:8180/realms/ecommerce
-      SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI: http://keycloak:8080/realms/ecommerce/protocol/openid-connect/certs
+      SPRING_PROFILES_ACTIVE: prod
+      PRODUCT_SERVICE_URL: http://product-service:8080
+      INVENTORY_SERVICE_URL: http://inventory-service:8080
+      ORDER_SERVICE_URL: http://order-service:8080
+      USER_SERVICE_URL: http://user-service:8080
+      KEYCLOAK_ISSUER_URI: ${KC_PUBLIC_URL:?KC_PUBLIC_URL is required}/realms/${KC_REALM:-ecommerce}
+      SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI: http://keycloak:8080/realms/${KC_REALM:-ecommerce}/protocol/openid-connect/certs
       REDIS_HOST: redis
-      REDIS_PASSWORD: ${REDIS_PASSWORD}
+      REDIS_PASSWORD: ${GATEWAY_REDIS_PASSWORD:?GATEWAY_REDIS_PASSWORD is required}
     ports:
       - "8080:8080"
     networks: [ backend, edge ]
-    healthcheck:
-      test: [ "CMD-SHELL", "curl -fs http://localhost:8080/actuator/health/readiness > /dev/null || exit 1" ]
-      interval: 10s
-      timeout: 5s
-      retries: 10
-      start_period: 40s
     depends_on:
       redis:
         condition: service_healthy
@@ -29,130 +71,91 @@ services:
   keycloak:
     image: quay.io/keycloak/keycloak:26.0
     restart: unless-stopped
+    # В dev realm импортируется автоматически (import + тестовые пользователи — в override).
     command: [ "start-dev", "--import-realm" ]
     environment:
-      KC_BOOTSTRAP_ADMIN_USERNAME: ${KC_ADMIN_USER}
-      KC_BOOTSTRAP_ADMIN_PASSWORD: ${KC_ADMIN_PASSWORD}
+      KC_HOSTNAME: ${KC_PUBLIC_URL:?KC_PUBLIC_URL is required}
+      KC_HEALTH_ENABLED: "true"   # /health/* на management-порту 9000
       KC_DB: postgres
       KC_DB_URL: jdbc:postgresql://keycloak-db:5432/${KC_DB_NAME}
-      KC_HOSTNAME: http://localhost:8180
       KC_DB_USERNAME: ${KC_DB_USER}
-      KC_DB_PASSWORD: ${KC_DB_PASSWORD}
-      TEST_USER_PASSWORD: ${TEST_USER_PASSWORD}
-      NOTIFICATION_SERVICE_SECRET: ${NOTIFICATION_SERVICE_SECRET}
-      PRODUCT_SERVICE_SECRET: ${PRODUCT_SERVICE_SECRET}
-      ORDER_SERVICE_SECRET: ${ORDER_SERVICE_SECRET}
-      INVENTORY_SERVICE_SECRET: ${INVENTORY_SERVICE_SECRET}
-      ANALYTICS_SERVICE_SECRET: ${ANALYTICS_SERVICE_SECRET}
-      DLT_PROCESSOR_SERVICE_SECRET: ${DLT_PROCESSOR_SERVICE_SECRET}
-    ports:
-      - "127.0.0.1:8180:8080"
+      KC_DB_PASSWORD: ${KC_DB_PASSWORD:?KC_DB_PASSWORD is required}
+      KC_BOOTSTRAP_ADMIN_USERNAME: ${KC_ADMIN_USER}
+      KC_BOOTSTRAP_ADMIN_PASSWORD: ${KC_ADMIN_PASSWORD:?KC_ADMIN_PASSWORD is required}
     networks: [ backend, edge ]
-    volumes:
-      - ./api-gateway/keycloak:/opt/keycloak/data/import
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - |
+          exec 3<>/dev/tcp/localhost/9000
+          echo -e 'GET /health/ready HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\n\r\n' >&3
+          grep -q '"status": "UP"' <&3
+      interval: 10s
+      timeout: 5s
+      retries: 15
+      start_period: 30s
+    logging: *logging
     depends_on:
       keycloak-db:
         condition: service_healthy
 
   keycloak-db:
-    image: postgres:16
-    restart: unless-stopped
+    <<: *postgres
     environment:
       POSTGRES_DB: ${KC_DB_NAME}
       POSTGRES_USER: ${KC_DB_USER}
-      POSTGRES_PASSWORD: ${KC_DB_PASSWORD}
+      POSTGRES_PASSWORD: ${KC_DB_PASSWORD:?KC_DB_PASSWORD is required}
     volumes:
       - keycloak-db-data:/var/lib/postgresql/data
-    networks: [ backend ]
-    healthcheck:
-      test: [ "CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}" ]
-      interval: 5s
-      timeout: 3s
-      retries: 10
 
+  # Redis для rate limiting в gateway.
   redis:
     image: redis:7
     restart: unless-stopped
     environment:
-      REDIS_PASSWORD: ${REDIS_PASSWORD}
-    command: [ "sh", "-c", "exec redis-server --requirepass \"$$REDIS_PASSWORD\"" ]
+      REDIS_PASSWORD: ${GATEWAY_REDIS_PASSWORD:?GATEWAY_REDIS_PASSWORD is required}
+    command: [ "sh", "-c", "exec redis-server --requirepass \"$$REDIS_PASSWORD\" --save \"\" --appendonly no" ]
     networks: [ backend ]
-    healthcheck:
-      test: [ "CMD-SHELL", "redis-cli -a \"$$REDIS_PASSWORD\" --no-auth-warning ping | grep -q PONG" ]
-      interval: 5s
-      timeout: 3s
-      retries: 10
+    healthcheck: *redis-healthcheck
+    logging: *logging
 
   # ----------- user-service -----------
   user-db:
-    image: postgres:16
-    restart: unless-stopped
+    <<: *postgres
     environment:
       POSTGRES_DB: ${USER_DB_NAME}
       POSTGRES_USER: ${USER_DB_USER}
-      POSTGRES_PASSWORD: ${USER_DB_PASSWORD}
+      POSTGRES_PASSWORD: ${USER_DB_PASSWORD:?USER_DB_PASSWORD is required}
     volumes:
       - user-db-data:/var/lib/postgresql/data
-    healthcheck:
-      test: [ "CMD-SHELL", "pg_isready -U ${USER_DB_USER} -d ${USER_DB_NAME}" ]
-      interval: 5s
-      timeout: 3s
-      retries: 10
-    ports:
-      - "5435:5432"
-    networks: [ backend, edge ]
 
   user-service:
-    build:
-      context: ./user-service
-      dockerfile: Dockerfile
-    container_name: user-service
-    restart: unless-stopped
+    <<: *spring-service
+    build: ./user-service
     depends_on:
       user-db:
         condition: service_healthy
     environment:
-      SERVER_PORT: 8085
-      SPRING_PROFILES_ACTIVE: dev #enable dev-mode
+      <<: *jwt-env
+      SPRING_PROFILES_ACTIVE: prod
       USER_DB_HOST: user-db
       USER_DB_NAME: ${USER_DB_NAME}
       USER_DB_USER: ${USER_DB_USER}
       USER_DB_PASSWORD: ${USER_DB_PASSWORD}
-      JWT_ISSUER_URI: http://localhost:8180/realms/ecommerce #KEYCLOAK_ISSUER_URI
-      JWT_JWK_SET_URI: http://keycloak:8080/realms/ecommerce/protocol/openid-connect/certs
-    healthcheck:
-      test: [ "CMD-SHELL", "curl -fs http://localhost:8085/actuator/health/readiness > /dev/null || exit 1" ]
-      interval: 10s
-      timeout: 5s
-      retries: 10
-      start_period: 40s
-    networks: [ backend ]
 
   # ----------- order-service -----------
   order-db:
-    image: postgres:16
-    restart: unless-stopped
+    <<: *postgres
     environment:
       POSTGRES_DB: ${ORDER_DB_NAME}
       POSTGRES_USER: ${ORDER_DB_USER}
-      POSTGRES_PASSWORD: ${ORDER_DB_PASSWORD}
+      POSTGRES_PASSWORD: ${ORDER_DB_PASSWORD:?ORDER_DB_PASSWORD is required}
     volumes:
       - order-db-data:/var/lib/postgresql/data
-    healthcheck:
-      test: [ "CMD-SHELL", "pg_isready -U ${ORDER_DB_USER} -d ${ORDER_DB_NAME}" ]
-      interval: 5s
-      timeout: 3s
-      retries: 10
-    ports:
-      - "5434:5432"
-    networks: [ backend, edge ]
 
   order-service:
-    build:
-      context: ./order-service
-      dockerfile: Dockerfile
-    container_name: order-service
-    restart: unless-stopped
+    <<: *spring-service
+    build: ./order-service
     depends_on:
       order-db:
         condition: service_healthy
@@ -161,53 +164,30 @@ services:
       schema-registry:
         condition: service_healthy
     environment:
-      SERVER_PORT: 8084
-      SPRING_PROFILES_ACTIVE: dev #enable dev-mod
+      <<: [ *jwt-env, *kafka-client-env ]
+      SPRING_PROFILES_ACTIVE: prod
       ORDER_DB_HOST: order-db
       ORDER_DB_NAME: ${ORDER_DB_NAME}
       ORDER_DB_USER: ${ORDER_DB_USER}
       ORDER_DB_PASSWORD: ${ORDER_DB_PASSWORD}
-      JWT_ISSUER_URI: http://localhost:8180/realms/ecommerce #KEYCLOAK_ISSUER_URI
-      JWT_JWK_SET_URI: http://keycloak:8080/realms/ecommerce/protocol/openid-connect/certs
-      KEYCLOAK_TOKEN_URI: http://keycloak:8080/realms/ecommerce/protocol/openid-connect/token
-      ORDER_SERVICE_SECRET: ${ORDER_SERVICE_SECRET}
-      PRODUCT_SERVICE_URL: http://product-service:8081
-      INVENTORY_SERVICE_URL: http://inventory-service:8083
-      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
-      SCHEMA_REGISTRY_URL: http://schema-registry:8081
-    healthcheck:
-      test: [ "CMD-SHELL", "curl -fs http://localhost:8084/actuator/health/readiness > /dev/null || exit 1" ]
-      interval: 10s
-      timeout: 5s
-      retries: 10
-      start_period: 40s
-    networks: [ backend ]
+      KEYCLOAK_TOKEN_URI: http://keycloak:8080/realms/${KC_REALM:-ecommerce}/protocol/openid-connect/token
+      ORDER_SERVICE_SECRET: ${ORDER_SERVICE_SECRET:?ORDER_SERVICE_SECRET is required}
+      PRODUCT_SERVICE_URL: http://product-service:8080
+      INVENTORY_SERVICE_URL: http://inventory-service:8080
 
   # --------- inventory-service ---------
   inventory-db:
-    image: postgres:16
-    restart: unless-stopped
+    <<: *postgres
     environment:
       POSTGRES_DB: ${INVENTORY_DB_NAME}
       POSTGRES_USER: ${INVENTORY_DB_USER}
-      POSTGRES_PASSWORD: ${INVENTORY_DB_PASSWORD}
+      POSTGRES_PASSWORD: ${INVENTORY_DB_PASSWORD:?INVENTORY_DB_PASSWORD is required}
     volumes:
       - inventory-db-data:/var/lib/postgresql/data
-    healthcheck:
-      test: [ "CMD-SHELL", "pg_isready -U ${INVENTORY_DB_USER} -d ${INVENTORY_DB_NAME}" ]
-      interval: 5s
-      timeout: 3s
-      retries: 10
-    ports:
-      - "5433:5432"
-    networks: [ backend, edge ]
 
   inventory-service:
-    build:
-      context: ./inventory-service
-      dockerfile: Dockerfile
-    container_name: inventory-service
-    restart: unless-stopped
+    <<: *spring-service
+    build: ./inventory-service
     depends_on:
       inventory-db:
         condition: service_healthy
@@ -216,32 +196,18 @@ services:
       schema-registry:
         condition: service_healthy
     environment:
-      SERVER_PORT: 8083
-      SPRING_PROFILES_ACTIVE: dev #enable dev-mod
+      <<: [ *jwt-env, *kafka-client-env ]
+      SPRING_PROFILES_ACTIVE: prod
       INVENTORY_DB_HOST: inventory-db
       INVENTORY_DB_PORT: 5432
       INVENTORY_DB_NAME: ${INVENTORY_DB_NAME}
       INVENTORY_DB_USER: ${INVENTORY_DB_USER}
       INVENTORY_DB_PASSWORD: ${INVENTORY_DB_PASSWORD}
-      JWT_ISSUER_URI: http://localhost:8180/realms/ecommerce #KEYCLOAK_ISSUER_URI
-      JWT_JWK_SET_URI: http://keycloak:8080/realms/ecommerce/protocol/openid-connect/certs
-      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
-      SCHEMA_REGISTRY_URL: http://schema-registry:8081
-    healthcheck:
-      test: [ "CMD-SHELL", "curl -fs http://localhost:8083/actuator/health/readiness > /dev/null || exit 1" ]
-      interval: 10s
-      timeout: 5s
-      retries: 10
-      start_period: 40s
-    networks: [ backend ]
 
   # ---------- product-service ----------
   product-service:
-    build:
-      context: ./product-service
-      dockerfile: Dockerfile
-    container_name: product-service
-    restart: unless-stopped
+    <<: *spring-service
+    build: ./product-service
     depends_on:
       product-mongo:
         condition: service_healthy
@@ -252,8 +218,8 @@ services:
       schema-registry:
         condition: service_healthy
     environment:
-      SERVER_PORT: 8081
-      SPRING_PROFILES_ACTIVE: dev #enable dev-mode
+      <<: [ *jwt-env, *kafka-client-env ]
+      SPRING_PROFILES_ACTIVE: prod
       MONGODB_HOST: product-mongo
       MONGODB_PORT: 27017
       PRODUCT_DB_NAME: ${PRODUCT_DB_NAME}
@@ -261,18 +227,7 @@ services:
       PRODUCT_DB_PASSWORD: ${PRODUCT_DB_PASSWORD}
       REDIS_HOST: product-redis
       REDIS_PORT: 6379
-      REDIS_PASSWORD: ${REDIS_PASSWORD}
-      JWT_ISSUER_URI: http://localhost:8180/realms/ecommerce #KEYCLOAK_ISSUER_URI
-      JWT_JWK_SET_URI: http://keycloak:8080/realms/ecommerce/protocol/openid-connect/certs
-      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
-      SCHEMA_REGISTRY_URL: http://schema-registry:8081
-    healthcheck:
-      test: [ "CMD-SHELL", "curl -fs http://localhost:8081/actuator/health/readiness > /dev/null || exit 1" ]
-      interval: 10s
-      timeout: 5s
-      retries: 10
-      start_period: 40s
-    networks: [ backend ]
+      REDIS_PASSWORD: ${PRODUCT_REDIS_PASSWORD:?PRODUCT_REDIS_PASSWORD is required}
 
   product-mongo:
     image: mongo:7.0
@@ -288,36 +243,38 @@ services:
         chown mongodb:mongodb /data/configdb/keyfile
         exec docker-entrypoint.sh mongod --replSet rs0 --keyFile /data/configdb/keyfile --bind_ip_all
     environment:
-      MONGO_INITDB_ROOT_USERNAME: ${MONGO_ROOT_USER}
-      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD}
+      MONGO_INITDB_ROOT_USERNAME: ${PRODUCT_MONGO_ROOT_USER}
+      MONGO_INITDB_ROOT_PASSWORD: ${PRODUCT_MONGO_ROOT_PASSWORD:?PRODUCT_MONGO_ROOT_PASSWORD is required}
       PRODUCT_DB_NAME: ${PRODUCT_DB_NAME}
       PRODUCT_DB_USER: ${PRODUCT_DB_USER}
-      PRODUCT_DB_PASSWORD: ${PRODUCT_DB_PASSWORD}
-    ports:
-      - "27017:27017"
+      PRODUCT_DB_PASSWORD: ${PRODUCT_DB_PASSWORD:?PRODUCT_DB_PASSWORD is required}
     volumes:
       - product-mongo-data:/data/db
       - ./product-service/docker/mongo/init-mongo.js:/docker-entrypoint-initdb.d/init-mongo.js:ro
-    #      - ./product-service/docker/mongo/seed-products.js:/docker-entrypoint-initdb.d/seed-products.js:ro
+      - ./product-service/docker/mongo/healthcheck.js:/healthcheck.js:ro
+    # Логика инициализации replica set вынесена в скрипт.
     healthcheck:
       test:
-        - CMD
-        - mongosh
-        - --quiet
-        - -u
-        - ${MONGO_ROOT_USER}
-        - -p
-        - ${MONGO_ROOT_PASSWORD}
-        - --authenticationDatabase
-        - admin
-        - --eval
-        - "try { rs.status() } catch (e) { rs.initiate({_id: 'rs0', members: [{_id: 0, host: 'product-mongo:27017'}]}) }; if (!db.hello().isWritablePrimary) { quit(1) }"
-      interval: 5s
+        - CMD-SHELL
+        - mongosh --quiet -u "$$MONGO_INITDB_ROOT_USERNAME" -p "$$MONGO_INITDB_ROOT_PASSWORD" --authenticationDatabase admin --file /healthcheck.js
+      interval: 10s
       timeout: 10s
-      retries: 20
+      retries: 15
       start_period: 20s
-    networks: [ backend, edge ]
+    networks: [ backend ]
+    logging: *logging
 
+  product-redis:
+    image: redis:7
+    restart: unless-stopped
+    environment:
+      REDIS_PASSWORD: ${PRODUCT_REDIS_PASSWORD:?PRODUCT_REDIS_PASSWORD is required}
+    command: [ "sh", "-c", "exec redis-server --requirepass \"$$REDIS_PASSWORD\" --maxmemory 128mb --maxmemory-policy allkeys-lru --save \"\" --appendonly no" ]
+    networks: [ backend ]
+    healthcheck: *redis-healthcheck
+    logging: *logging
+
+  # ----------- kafka -----------
   kafka:
     image: confluentinc/cp-kafka:8.4.0
     hostname: kafka
@@ -331,7 +288,7 @@ services:
       KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
       KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
       KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
-      CLUSTER_ID: 4L6g3nShT-eMCtK--X86sw
+      CLUSTER_ID: ${KAFKA_CLUSTER_ID:?KAFKA_CLUSTER_ID is required}
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
       KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
       KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
@@ -340,11 +297,12 @@ services:
       - kafka-data:/var/lib/kafka/data
     healthcheck:
       test: [ "CMD-SHELL", "kafka-broker-api-versions --bootstrap-server localhost:9092 > /dev/null 2>&1" ]
-      interval: 10s
+      interval: 15s
       timeout: 10s
       retries: 10
       start_period: 20s
     networks: [ backend ]
+    logging: *logging
 
   schema-registry:
     image: confluentinc/cp-schema-registry:8.4.0
@@ -359,43 +317,13 @@ services:
       kafka:
         condition: service_healthy
     healthcheck:
-      test: [ "CMD", "bash", "-c", "exec 3<>/dev/tcp/localhost/8081" ]
+      test: ["CMD", "ub", "sr-ready", "localhost", "8081", "5"]
       interval: 10s
       timeout: 5s
       retries: 10
       start_period: 20s
     networks: [ backend ]
-
-  kafka-ui:
-    image: provectuslabs/kafka-ui:v0.7.2
-    ports:
-      - "127.0.0.1:8082:8080"
-    environment:
-      KAFKA_CLUSTERS_0_NAME: local
-      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:9092
-      DYNAMIC_CONFIG_ENABLED: "false"
-      KAFKA_CLUSTERS_0_SCHEMAREGISTRY: http://schema-registry:8081
-    depends_on:
-      kafka:
-        condition: service_healthy
-    networks: [ backend, edge ]
-
-  product-redis:
-    image: redis:7
-    container_name: product-redis
-    restart: unless-stopped
-    environment:
-      REDIS_PASSWORD: ${REDIS_PASSWORD}
-    command:
-      - sh
-      - -c
-      - exec redis-server --requirepass "$$REDIS_PASSWORD" --maxmemory 128mb --maxmemory-policy allkeys-lru --save "" --appendonly no
-    networks: [ backend ]
-    healthcheck:
-      test: [ "CMD-SHELL", "redis-cli -a \"$$REDIS_PASSWORD\" --no-auth-warning ping | grep -q PONG" ]
-      interval: 10s
-      timeout: 5s
-      retries: 5
+    logging: *logging
 
 networks:
   backend:

@@ -109,3 +109,5 @@ springdoc:
         url: /aggregate/inventory-service/v3/api-docs
       - name: Order Service
         url: /aggregate/order-service/v3/api-docs
+      - name: User Service
+        url: /aggregate/user-service/v3/api-docs
