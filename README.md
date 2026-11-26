@@ -8,7 +8,7 @@
 4. трасировка логов сквозь сервисы
 5. inventory-schema продукты со sku, что неизвестны product-service Должны лететь в dlt
 6. swagger в Product-service
-7.
+7. ship статус возможен без адреса у покупателя
 
 PATCH с телом {} 400 EMPTY_UPDATE --- 400 Bad request
 

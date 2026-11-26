@@ -1,13 +1,14 @@
-package com.sndbx.product.config;
+package com.sndbx.common.kafka;
 
-import com.sndbx.product.exception.VariantNotFoundException;
-import com.sndbx.product.exception.config.ProductServiceException;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.common.serialization.ByteArraySerializer;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.AutoConfiguration;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.kafka.core.KafkaOperations;
 import org.springframework.kafka.core.KafkaTemplate;
@@ -19,14 +20,17 @@ import org.springframework.kafka.support.ExponentialBackOffWithMaxRetries;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-@Configuration
-public class KafkaErrorHandlingConfig {
+@AutoConfiguration
+@ConditionalOnClass(KafkaTemplate.class)
+public class CommonKafkaAutoConfiguration {
 
     private static final String DLT_SUFFIX = ".DLT";
 
     @Bean
-    CommonErrorHandler kafkaErrorHandler(
+    @ConditionalOnMissingBean(CommonErrorHandler.class)
+    CommonErrorHandler commonKafkaErrorHandler(
             KafkaTemplate<String, Object> avroTemplate,
+            ObjectProvider<KafkaNotRetryableExceptions> notRetryable,
             @Value("${app.kafka.retry.max-retries}") int maxRetries,
             @Value("${app.kafka.retry.initial-interval-ms}") long initialIntervalMs,
             @Value("${app.kafka.retry.multiplier}") double multiplier,
@@ -52,10 +56,10 @@ public class KafkaErrorHandlingConfig {
         backOff.setMaxInterval(maxIntervalMs);
 
         DefaultErrorHandler handler = new DefaultErrorHandler(recoverer, backOff);
-        handler.addNotRetryableExceptions(
-                DataIntegrityViolationException.class,
-                VariantNotFoundException.class,
-                ProductServiceException.class);
+        handler.addNotRetryableExceptions(DataIntegrityViolationException.class);
+        notRetryable.orderedStream()
+                .flatMap(p -> p.classes().stream())
+                .forEach(c -> handler.addNotRetryableExceptions(c));
         return handler;
     }
 }
