@@ -102,6 +102,14 @@ springdoc:
   swagger-ui:
     enabled: true
     path: /swagger-ui.html
+    persist-authorization: true
+    tags-sorter: alpha                  # группы по алфавиту
+    operations-sorter: method           # внутри группы: GET, POST, PUT, DELETE
+    display-request-duration: true      # время ответа под результатом
+    default-models-expand-depth: -1     # скрыть нижний блок Schemas
+    oauth:
+      client-id: ecommerce-dev
+      use-pkce-with-authorization-code-grant: true
     urls:
       - name: Product Service
         url: /aggregate/product-service/v3/api-docs

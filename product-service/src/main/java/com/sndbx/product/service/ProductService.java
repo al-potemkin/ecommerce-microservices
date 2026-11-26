@@ -104,7 +104,7 @@ public class ProductService {
             @CacheEvict(cacheNames = CacheConfig.PRODUCT_CARD, key = "#id"),
             @CacheEvict(cacheNames = CacheConfig.FILTER_UNIVERSE, allEntries = true)
     })
-    public ProductResponse addVariant(String id, VariantRequest request) {
+    public ProductResponse addVariantToProduct(String id, VariantRequest request) {
         Product product = load(id);
         Variant variant = mapper.toVariant(request);
         variantValidator.checkNewVariant(product, variant);
@@ -168,12 +168,11 @@ public class ProductService {
         List<Variant> variants = new ArrayList<>(product.getVariants());
         for (int i = 0; i < variants.size(); i++) {
             Variant variant = variants.get(i);
-            if (variant.sku().equals(sku)) {
-                if (variant.inStock() != inStock) {
-                    variants.set(i, variant.withInStock(inStock));
-                    product.setVariants(variants);
-                    repository.save(product);
-                }
+
+            if (variant.sku().equals(sku) && variant.inStock() != inStock) {
+                variants.set(i, variant.withInStock(inStock));
+                product.setVariants(variants);
+                repository.save(product);
                 break;
             }
         }

@@ -7,7 +7,7 @@ services:
       ORDER_SERVICE_URL: http://order-stub:8080
       INVENTORY_SERVICE_URL: http://inventory-stub:8080
       KEYCLOAK_ISSUER_URI: http://localhost:8180/realms/ecommerce
-      SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI: http://keycloak:8080/realms/ecommerce/protocol/openid-connect/certs
+      SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI: http://keycloak:8080/realms/ecommerce/protocol/openid-connect/certs # ref
       REDIS_HOST: redis
       REDIS_PASSWORD: ${REDIS_PASSWORD}
     ports:

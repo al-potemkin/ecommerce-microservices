@@ -14,7 +14,7 @@ public class VariantLookupService {
 
     private final ProductRepository repository;
 
-    public List<VariantInfoResponse> lookup(Set<String> skus) {
+    public List<VariantInfoResponse> findVariantsBySkus(Set<String> skus) {
         return repository.findByVariantsSkuIn(skus).stream()
                 .flatMap(product -> product.getVariants().stream()
                         .filter(variant -> skus.contains(variant.sku()))
@@ -25,7 +25,9 @@ public class VariantLookupService {
                                 variant.volumeMl(),
                                 variant.price(),
                                 product.isActive() && variant.active(),
-                                variant.inStock())))
+                                variant.inStock()
+                        ))
+                )
                 .toList();
     }
 }
