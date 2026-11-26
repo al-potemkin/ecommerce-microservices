@@ -57,8 +57,7 @@ public class OpenApiConfig {
                                         .required(true)
                                         .schema(new StringSchema())
                                         .description("Product ID")
-                                        .example("6745a1f2c3d4e5f607182930")
-                        )
+                                        .example("6745a1f2c3d4e5f607182930"))
                         .addParameters("VariantSku",
                                 new Parameter()
                                         .name("sku")

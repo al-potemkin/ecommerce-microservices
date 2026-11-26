@@ -114,8 +114,10 @@ public class ReservationService {
             case COMMITTED, RETURNED -> {
                 return mapper.toResponse(orderId, reservations);
             }
-            case RELEASED -> throw new ReservationConflictException(InventoryErrorCode.RESERVATION_RELEASED,
-                    "Reservation for order " + orderId + " was released or expired and cannot be committed");
+            case RELEASED -> throw new ReservationConflictException(
+                    InventoryErrorCode.RESERVATION_RELEASED,
+                    "Reservation for order " + orderId + " was released or expired and cannot be committed"
+            );
             case RESERVED -> {
                 for (Reservation reservation : reservations) {
                     StockItem item = reservation.getStockItem();

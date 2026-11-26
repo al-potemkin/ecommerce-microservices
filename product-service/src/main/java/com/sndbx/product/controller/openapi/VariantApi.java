@@ -13,7 +13,6 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.Size;
-import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -24,14 +23,14 @@ import org.springframework.web.bind.annotation.RequestParam;
 import java.util.List;
 import java.util.Set;
 
-@Tag(name = "Variants", description = "Product variant management and stock availability.")
+@Tag(name = "Variants  (internal)", description = "Product variant management and stock availability. Internal API: not routed by the gateway, requires the INTERNAL_SERVICE role (client credentials).")
 public interface VariantApi {
 
     @Operation(
             summary = "Get variants by SKUs",
             description = "Returns information about product variants matching the provided SKUs."
     )
-    @ApiResponse(responseCode = "200", description = "Variant information successfully retrieved", content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE, array = @ArraySchema(schema = @Schema(implementation = VariantInfoResponse.class))))
+    @ApiResponse(responseCode = "200", description = "Variant information successfully retrieved", content = @Content(array = @ArraySchema(schema = @Schema(implementation = VariantInfoResponse.class))))
     @GetMapping
     List<VariantInfoResponse> getVariantsBySkus(@Parameter(description = "Variant SKUs (1 to 100)", array = @ArraySchema(schema = @Schema(type = "string", example = "DIOR-SAUV-100"))) @RequestParam @NotEmpty @Size(max = 100) Set<String> skus);
 

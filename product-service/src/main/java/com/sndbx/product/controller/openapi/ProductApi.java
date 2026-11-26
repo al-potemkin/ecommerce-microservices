@@ -20,7 +20,6 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import org.springdoc.core.annotations.ParameterObject;
-import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -38,7 +37,7 @@ public interface ProductApi {
             description = "The product is created as inactive. Product variants (1 to 10) must be provided during creation. New variants have inStock=false by default; availability is managed by inventory-service."
     )
     @ApiResponses({
-            @ApiResponse(responseCode = "201", description = "Product created. The resource URL is provided in the Location header.", content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE, schema = @Schema(implementation = ProductResponse.class))),
+            @ApiResponse(responseCode = "201", description = "Product created. The resource URL is provided in the Location header.", content = @Content(schema = @Schema(implementation = ProductResponse.class))),
             @ApiResponse(responseCode = "409", description = "Variants contain duplicate or already used SKU and volume values.", content = @Content)
     })
     @PostMapping
@@ -51,7 +50,7 @@ public interface ProductApi {
             description = "Authentication token is optional. Returns product details. Inactive products are only accessible to PRODUCT_MANAGER; other users receive 404."
     )
     @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Product found", content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE, schema = @Schema(implementation = ProductResponse.class))),
+            @ApiResponse(responseCode = "200", description = "Product found", content = @Content(schema = @Schema(implementation = ProductResponse.class))),
             @ApiResponse(responseCode = "404", description = "Product not found", content = @Content)
     })
     @GetMapping("/{productId}")
@@ -64,7 +63,7 @@ public interface ProductApi {
             description = "Updates product name, brand, description, gender, scent families, and images. Variants are managed through separate operations."
     )
     @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Product details successfully updated", content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE, schema = @Schema(implementation = ProductResponse.class))),
+            @ApiResponse(responseCode = "200", description = "Product details successfully updated", content = @Content(schema = @Schema(implementation = ProductResponse.class))),
             @ApiResponse(responseCode = "404", description = "Product not found", content = @Content)
     })
     @PutMapping("/{productId}")
@@ -89,7 +88,7 @@ public interface ProductApi {
             description = "Makes the product visible in the catalog to all users. A product cannot be activated without at least one active variant."
     )
     @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Product successfully activated", content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE, schema = @Schema(implementation = ProductResponse.class))),
+            @ApiResponse(responseCode = "200", description = "Product successfully activated", content = @Content(schema = @Schema(implementation = ProductResponse.class))),
             @ApiResponse(responseCode = "404", description = "Product not found", content = @Content),
             @ApiResponse(responseCode = "409", description = "Product has no active variants and cannot be activated", content = @Content)
     })
@@ -102,7 +101,7 @@ public interface ProductApi {
             description = "Adds a new variant (volume) to the product. The SKU cannot be changed after creation."
     )
     @ApiResponses({
-            @ApiResponse(responseCode = "201", description = "Product variant successfully added. The resource URL is provided in the Location header.", content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE, schema = @Schema(implementation = ProductResponse.class))),
+            @ApiResponse(responseCode = "201", description = "Product variant successfully added. The resource URL is provided in the Location header.", content = @Content(schema = @Schema(implementation = ProductResponse.class))),
             @ApiResponse(responseCode = "404", description = "Product not found", content = @Content),
             @ApiResponse(responseCode = "409", description = "Variants contain duplicate or already used SKU and volume values.", content = @Content)
     })
@@ -116,7 +115,7 @@ public interface ProductApi {
             description = "Updates the price and/or status (active/inactive) of a product variant. If the last active variant is deactivated, the product is automatically deactivated."
     )
     @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Product variant successfully updated", content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE, schema = @Schema(implementation = ProductResponse.class))),
+            @ApiResponse(responseCode = "200", description = "Product variant successfully updated", content = @Content(schema = @Schema(implementation = ProductResponse.class))),
             @ApiResponse(responseCode = "404", description = "Product or variant not found", content = @Content)
     })
     @PatchMapping("/{productId}/variants/{sku}")
@@ -140,7 +139,7 @@ public interface ProductApi {
             summary = "Get catalog filters with counts",
             description = "Returns available values for the catalog filter panel, e.g. 'Dior (12)'. Each filter count is calculated without applying that filter itself."
     )
-    @ApiResponse(responseCode = "200", description = "Catalog filter options with product counts successfully retrieved.", content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE, schema = @Schema(implementation = CatalogFacetsResponse.class)))
+    @ApiResponse(responseCode = "200", description = "Catalog filter options with product counts successfully retrieved.", content = @Content(schema = @Schema(implementation = CatalogFacetsResponse.class)))
     @GetMapping("/filters")
     CatalogFacetsResponse getFilters(@ParameterObject @Valid CatalogFilter filter);
 }

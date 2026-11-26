@@ -21,10 +21,12 @@ public class VariantController implements VariantApi {
     private final VariantLookupService lookupService;
     private final ProductService productService;
 
+    @Override
     public List<VariantInfoResponse> getVariantsBySkus(Set<String> skus) {
         return lookupService.findVariantsBySkus(skus);
     }
 
+    @Override
     public ResponseEntity<Void> setStock(String sku, StockStatusRequest request) {
         productService.setVariantStock(sku, request.inStock());
         return ResponseEntity.noContent().build();
