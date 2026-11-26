@@ -1,8 +1,8 @@
 package com.sndbx.product.mapper;
 
+import com.sndbx.product.dto.payload.ProductEventPayload;
 import com.sndbx.product.events.ProductEvent;
 import com.sndbx.product.events.VariantSnapshot;
-import com.sndbx.product.dto.payload.ProductEventPayload;
 import org.mapstruct.Mapper;
 
 @Mapper(componentModel = "spring")

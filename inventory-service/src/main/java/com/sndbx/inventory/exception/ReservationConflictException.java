@@ -1,6 +1,6 @@
 package com.sndbx.inventory.exception;
 
-import com.sndbx.inventory.exception.config.ErrorCode;
+import com.sndbx.common.exception.data.ErrorCode;
 import com.sndbx.inventory.exception.config.InventoryServiceException;
 
 public class ReservationConflictException extends InventoryServiceException {

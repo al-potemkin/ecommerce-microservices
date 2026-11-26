@@ -1,7 +1,7 @@
 package com.sndbx.product.config;
 
-import com.sndbx.product.exception.ProductServiceException;
 import com.sndbx.product.exception.VariantNotFoundException;
+import com.sndbx.product.exception.config.ProductServiceException;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.common.serialization.ByteArraySerializer;

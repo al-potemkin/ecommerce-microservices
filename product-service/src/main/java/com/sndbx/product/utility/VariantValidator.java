@@ -1,6 +1,6 @@
 package com.sndbx.product.utility;
 
-import com.sndbx.product.exception.config.ApiProblem;
+import com.sndbx.common.exception.data.ApiProblem;
 import com.sndbx.product.exception.VariantConflictException;
 import com.sndbx.product.model.Product;
 import com.sndbx.product.model.Variant;

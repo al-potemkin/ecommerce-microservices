@@ -1,10 +1,12 @@
-package com.sndbx.order.config.client;
+package com.sndbx.order.mapper;
 
+import com.sndbx.common.exception.data.ApiProblem;
+import com.sndbx.order.config.client.DefaultUpstreamErrorMapper;
+import com.sndbx.order.config.client.UpstreamErrorMapper;
 import com.sndbx.order.dto.client.UpstreamProblem;
 import com.sndbx.order.exception.InsufficientStockException;
 import com.sndbx.order.exception.ReservationAlreadyCommittedException;
 import com.sndbx.order.exception.ReservationReleasedException;
-import com.sndbx.order.exception.config.ApiProblem;
 import org.springframework.web.client.RestClientResponseException;
 
 import java.util.List;
@@ -15,15 +17,21 @@ public class InventoryErrorMapper implements UpstreamErrorMapper {
 
     @Override
     public RuntimeException map(String dependency, RestClientResponseException ex) {
-        UpstreamProblem problem = ex.getStatusCode().is4xxClientError() ? readProblem(ex) : null;
+        UpstreamProblem problem = ex.getStatusCode().is4xxClientError()
+                ? readProblem(ex)
+                : null;
         if (problem == null || problem.code() == null) {
             return fallback.map(dependency, ex);
         }
         return switch (problem.code()) {
             case "INSUFFICIENT_STOCK" -> new InsufficientStockException(
-                    "Not enough stock for the requested items", toFieldErrors(problem, "not enough stock"));
+                    "Not enough stock for the requested items",
+                    toFieldErrors(problem, "not enough stock")
+            );
             case "STOCK_ITEM_NOT_FOUND" -> new InsufficientStockException(
-                    "Some items are not available", toFieldErrors(problem, "not available"));
+                    "Some items are not available",
+                    toFieldErrors(problem, "not available")
+            );
             case "RESERVATION_RELEASED" -> new ReservationReleasedException(problem.detail());
             case "RESERVATION_ALREADY_COMMITTED" -> new ReservationAlreadyCommittedException(problem.detail());
             default -> fallback.map(dependency, ex);
@@ -39,11 +47,11 @@ public class InventoryErrorMapper implements UpstreamErrorMapper {
     }
 
     private List<ApiProblem.FieldError> toFieldErrors(UpstreamProblem problem, String message) {
-        if (problem.errors() == null) {
-            return List.of();
+        if (problem.errors() != null) {
+            return problem.errors().stream()
+                    .map(f -> new ApiProblem.FieldError(f.field(), message))
+                    .toList();
         }
-        return problem.errors().stream()
-                .map(f -> new ApiProblem.FieldError(f.field(), message))
-                .toList();
+        return List.of();
     }
 }

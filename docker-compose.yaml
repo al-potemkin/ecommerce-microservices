@@ -131,7 +131,9 @@ services:
 
   user-service:
     <<: *spring-service
-    build: ./user-service
+    build:
+      context: .
+      dockerfile: user-service/Dockerfile
     depends_on:
       user-db:
         condition: service_healthy
@@ -155,7 +157,9 @@ services:
 
   order-service:
     <<: *spring-service
-    build: ./order-service
+    build:
+      context: .
+      dockerfile: order-service/Dockerfile
     depends_on:
       order-db:
         condition: service_healthy
@@ -187,7 +191,9 @@ services:
 
   inventory-service:
     <<: *spring-service
-    build: ./inventory-service
+    build:
+      context: .
+      dockerfile: inventory-service/Dockerfile
     depends_on:
       inventory-db:
         condition: service_healthy
@@ -207,7 +213,9 @@ services:
   # ---------- product-service ----------
   product-service:
     <<: *spring-service
-    build: ./product-service
+    build:
+      context: .
+      dockerfile: product-service/Dockerfile
     depends_on:
       product-mongo:
         condition: service_healthy
@@ -317,7 +325,7 @@ services:
       kafka:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "ub", "sr-ready", "localhost", "8081", "5"]
+      test: [ "CMD", "ub", "sr-ready", "localhost", "8081", "5" ]
       interval: 10s
       timeout: 5s
       retries: 10

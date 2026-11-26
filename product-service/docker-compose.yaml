@@ -1,10 +1,6 @@
 services:
   product-service:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    container_name: product-service
-    restart: unless-stopped
+    build: .
     depends_on:
       product-mongo:
         condition: service_healthy
@@ -12,8 +8,10 @@ services:
         condition: service_healthy
       kafka:
         condition: service_healthy
+      schema-registry:
+        condition: service_healthy
     environment:
-      SERVER_PORT: 8081
+      SPRING_PROFILES_ACTIVE: dev
       MONGODB_HOST: product-mongo
       MONGODB_PORT: 27017
       PRODUCT_DB_NAME: ${PRODUCT_DB_NAME}
@@ -21,15 +19,16 @@ services:
       PRODUCT_DB_PASSWORD: ${PRODUCT_DB_PASSWORD}
       REDIS_HOST: product-redis
       REDIS_PORT: 6379
-      REDIS_PASSWORD: ${REDIS_PASSWORD}
-      JWT_ISSUER_URI: http://localhost:8180/realms/ecommerce #KEYCLOAK_ISSUER_URI
-      SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI: http://keycloak:8080/realms/ecommerce/protocol/openid-connect/certs
+      REDIS_PASSWORD: ${PRODUCT_REDIS_PASSWORD:?PRODUCT_REDIS_PASSWORD is required}
       KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      SCHEMA_REGISTRY_URL: http://schema-registry:8081
     ports:
-      - "127.0.0.1:8081:8081"
+      - "127.0.0.1:8081:8080"
+    networks: [ backend, edge ]
 
   product-mongo:
-    image: mongo:7
+    image: mongo:7.0
+    restart: unless-stopped
     entrypoint:
       - bash
       - -c
@@ -40,36 +39,38 @@ services:
         chmod 400 /data/configdb/keyfile
         chown mongodb:mongodb /data/configdb/keyfile
         exec docker-entrypoint.sh mongod --replSet rs0 --keyFile /data/configdb/keyfile --bind_ip_all
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${PRODUCT_MONGO_ROOT_USER}
+      MONGO_INITDB_ROOT_PASSWORD: ${PRODUCT_MONGO_ROOT_PASSWORD:?PRODUCT_MONGO_ROOT_PASSWORD is required}
+      PRODUCT_DB_NAME: ${PRODUCT_DB_NAME}
+      PRODUCT_DB_USER: ${PRODUCT_DB_USER}
+      PRODUCT_DB_PASSWORD: ${PRODUCT_DB_PASSWORD:?PRODUCT_DB_PASSWORD is required}
+    volumes:
+      - product-mongo-data:/data/db
+      - ./product-service/docker/mongo/init-mongo.js:/docker-entrypoint-initdb.d/init-mongo.js:ro
+      - ./product-service/docker/mongo/healthcheck.js:/healthcheck.js:ro
+    # Логика инициализации replica set вынесена в скрипт.
     healthcheck:
       test:
-        - CMD
-        - mongosh
-        - --quiet
-        - -u
-        - ${MONGO_ROOT_USER}
-        - -p
-        - ${MONGO_ROOT_PASSWORD}
-        - --authenticationDatabase
-        - admin
-        - --eval
-        - "try { rs.status() } catch (e) { rs.initiate({_id: 'rs0', members: [{_id: 0, host: 'product-mongo:27017'}]}) }; if (!db.hello().isWritablePrimary) { quit(1) }"
-      interval: 5s
+        - CMD-SHELL
+        - mongosh --quiet -u "$$MONGO_INITDB_ROOT_USERNAME" -p "$$MONGO_INITDB_ROOT_PASSWORD" --authenticationDatabase admin --file /healthcheck.js
+      interval: 10s
       timeout: 10s
-      retries: 20
+      retries: 15
       start_period: 20s
+    ports:
+      - "127.0.0.1:27017:27017"
+    networks: [ backend, edge ]
 
   product-redis:
-    image: redis:7-alpine
-    container_name: product-redis
+    image: redis:7
     restart: unless-stopped
     environment:
-      REDIS_PASSWORD: ${REDIS_PASSWORD}
-    command:
-      - sh
-      - -c
-      - exec redis-server --requirepass "$$REDIS_PASSWORD" --maxmemory 128mb --maxmemory-policy allkeys-lru --save "" --appendonly no
+      REDIS_PASSWORD: ${PRODUCT_REDIS_PASSWORD:?PRODUCT_REDIS_PASSWORD is required}
+    command: [ "sh", "-c", "exec redis-server --requirepass \"$$REDIS_PASSWORD\" --maxmemory 128mb --maxmemory-policy allkeys-lru --save \"\" --appendonly no" ]
     ports:
-      - "127.0.0.1:6379:6379"
+      - "127.0.0.1:6380:6379"
+    networks: [ backend, edge ]
     healthcheck:
       test: [ "CMD-SHELL", "redis-cli -a \"$$REDIS_PASSWORD\" --no-auth-warning ping | grep -q PONG" ]
       interval: 10s
@@ -77,31 +78,47 @@ services:
       retries: 5
 
   kafka:
-    image: apache/kafka:4.1.0
+    image: confluentinc/cp-kafka:8.4.0
     hostname: kafka
-    ports:
-      - "127.0.0.1:29092:29092"   # для инструментов с хоста (kcat, Offset Explorer)
+    restart: unless-stopped
     environment:
       KAFKA_NODE_ID: 1
       KAFKA_PROCESS_ROLES: broker,controller
-      KAFKA_LISTENERS: CONTROLLER://:9093,INTERNAL://:9092,EXTERNAL://:29092
-      KAFKA_ADVERTISED_LISTENERS: INTERNAL://kafka:9092,EXTERNAL://127.0.0.1:29092
-      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,INTERNAL:PLAINTEXT,EXTERNAL:PLAINTEXT
+      KAFKA_LISTENERS: CONTROLLER://:9093,INTERNAL://:9092
+      KAFKA_ADVERTISED_LISTENERS: INTERNAL://kafka:9092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,INTERNAL:PLAINTEXT
       KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
       KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
       KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
-      CLUSTER_ID: 4L6g3nShT-eMCtK--X86sw
+      CLUSTER_ID: ${KAFKA_CLUSTER_ID:?KAFKA_CLUSTER_ID is required}
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
       KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
       KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
       KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+    volumes:
+      - kafka-data:/var/lib/kafka/data
     healthcheck:
-      test: [ "CMD-SHELL", "/opt/kafka/bin/kafka-broker-api-versions.sh --bootstrap-server localhost:9092 > /dev/null 2>&1" ]
-      interval: 10s
+      test: [ "CMD-SHELL", "kafka-broker-api-versions --bootstrap-server localhost:9092 > /dev/null 2>&1" ]
+      interval: 15s
       timeout: 10s
       retries: 10
       start_period: 20s
+    networks: [ backend ]
+
+  kafka-ui:
+    image: provectuslabs/kafka-ui:v0.7.2
+    ports:
+      - "127.0.0.1:8082:8080"
+    environment:
+      KAFKA_CLUSTERS_0_NAME: local
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:9092
+      KAFKA_CLUSTERS_0_SCHEMAREGISTRY: http://schema-registry:8081
+      DYNAMIC_CONFIG_ENABLED: "false"
+    depends_on:
+      kafka:
+        condition: service_healthy
     networks: [ backend, edge ]
 
 volumes:
   product-mongo-data:
+  kafka-data:

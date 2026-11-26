@@ -1,5 +1,6 @@
 package com.sndbx.product.config;
 
+import com.sndbx.common.config.SecurityProblemHandler;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -13,35 +14,24 @@ import org.springframework.security.web.SecurityFilterChain;
 public class SecurityConfig {
 
     @Bean
-    JwtAuthenticationConverter jwtAuthenticationConverter(KeycloakRealmRoleConverter roleConverter) {
-        JwtAuthenticationConverter converter = new JwtAuthenticationConverter();
-        converter.setJwtGrantedAuthoritiesConverter(roleConverter);
-        return converter;
-    }
-
-    @Bean
     SecurityFilterChain securityFilterChain(HttpSecurity http,
                                             JwtAuthenticationConverter jwtAuthenticationConverter,
-                                            ProblemAuthenticationEntryPoint entryPoint,
-                                            ProblemAccessDeniedHandler accessDeniedHandler) {
+                                            SecurityProblemHandler problemHandler) {
         http
                 .csrf(AbstractHttpConfigurer::disable)
                 .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers(HttpMethod.GET,
-                                "/api/products",
-                                "/api/products/filters",
-                                "/api/products/{id}").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/products", "/api/products/filters", "/api/products/{id}").permitAll()
                         .requestMatchers("/actuator/health/**").permitAll()
                         .requestMatchers("/internal/**").hasRole("INTERNAL_SERVICE")
                         .requestMatchers("/api/products/**").hasRole("PRODUCT_MANAGER")
                         .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
                         .anyRequest().authenticated())
                 .exceptionHandling(e -> e
-                        .authenticationEntryPoint(entryPoint)
-                        .accessDeniedHandler(accessDeniedHandler))
+                        .authenticationEntryPoint(problemHandler)
+                        .accessDeniedHandler(problemHandler))
                 .oauth2ResourceServer(oauth -> oauth
-                        .authenticationEntryPoint(entryPoint)
+                        .authenticationEntryPoint(problemHandler)
                         .jwt(jwt -> jwt.jwtAuthenticationConverter(jwtAuthenticationConverter)));
         return http.build();
     }

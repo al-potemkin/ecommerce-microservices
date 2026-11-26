@@ -1,5 +1,7 @@
 package com.sndbx.inventory.service;
 
+import com.sndbx.common.exception.data.ApiProblem;
+import com.sndbx.common.exception.data.CommonErrorCode;
 import com.sndbx.inventory.dto.request.ReservationItemRequest;
 import com.sndbx.inventory.dto.request.ReserveRequest;
 import com.sndbx.inventory.dto.response.ReservationResponse;
@@ -10,8 +12,7 @@ import com.sndbx.inventory.exception.InsufficientStockException;
 import com.sndbx.inventory.exception.ReservationConflictException;
 import com.sndbx.inventory.exception.ReservationNotFoundException;
 import com.sndbx.inventory.exception.StockItemNotFoundException;
-import com.sndbx.inventory.exception.config.ApiProblem;
-import com.sndbx.inventory.exception.config.ErrorCode;
+import com.sndbx.inventory.exception.config.InventoryErrorCode;
 import com.sndbx.inventory.mapper.ReservationMapper;
 import com.sndbx.inventory.repository.ReservationRepository;
 import com.sndbx.inventory.repository.StockItemRepository;
@@ -113,7 +114,7 @@ public class ReservationService {
             case COMMITTED, RETURNED -> {
                 return mapper.toResponse(orderId, reservations);
             }
-            case RELEASED -> throw new ReservationConflictException(ErrorCode.RESERVATION_RELEASED,
+            case RELEASED -> throw new ReservationConflictException(InventoryErrorCode.RESERVATION_RELEASED,
                     "Reservation for order " + orderId + " was released or expired and cannot be committed");
             case RESERVED -> {
                 for (Reservation reservation : reservations) {
@@ -136,8 +137,9 @@ public class ReservationService {
             case RELEASED -> {
                 return mapper.toResponse(orderId, reservations);
             }
-            case COMMITTED, RETURNED -> throw new ReservationConflictException(ErrorCode.RESERVATION_ALREADY_COMMITTED,
-                    "Reservation for order " + orderId + " is already committed and cannot be released");
+            case COMMITTED, RETURNED ->
+                    throw new ReservationConflictException(InventoryErrorCode.RESERVATION_ALREADY_COMMITTED,
+                            "Reservation for order " + orderId + " is already committed and cannot be released");
             case RESERVED -> {
                 for (Reservation reservation : reservations) {
                     StockItem item = reservation.getStockItem();
@@ -158,9 +160,8 @@ public class ReservationService {
 
         switch (reservations.getFirst().getStatus()) {
             case RETURNED -> {
-                return;
             }
-            case RESERVED, RELEASED -> throw new ReservationConflictException(ErrorCode.CONFLICT,
+            case RESERVED, RELEASED -> throw new ReservationConflictException(CommonErrorCode.CONFLICT,
                     "Order " + orderId + " was not committed, nothing to return to stock");
             case COMMITTED -> {
                 for (Reservation reservation : reservations) {

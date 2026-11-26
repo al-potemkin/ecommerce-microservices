@@ -1,12 +1,11 @@
 package com.sndbx.user.service;
 
+import com.sndbx.common.exception.data.ApiProblem;
 import com.sndbx.user.dto.request.AddressRequest;
 import com.sndbx.user.dto.request.UpdateProfileRequest;
 import com.sndbx.user.entity.UserAddress;
 import com.sndbx.user.entity.UserProfile;
-import com.sndbx.user.exception.config.ApiProblem;
-import com.sndbx.user.exception.config.ErrorCode;
-import com.sndbx.user.exception.config.UserServiceException;
+import com.sndbx.user.exception.InvalidAddressException;
 import com.sndbx.user.mapper.UserAddressMapper;
 import com.sndbx.user.mapper.UserProfileMapper;
 import com.sndbx.user.repository.UserProfileRepository;
@@ -82,7 +81,7 @@ public class UserService {
             errors.add(new ApiProblem.FieldError(fieldPrefix + "addressLine", "Address line is required"));
         }
         if (!errors.isEmpty()) {
-            throw new UserServiceException(ErrorCode.VALIDATION_FAILED, null, errors);
+            throw new InvalidAddressException("Address is incomplete", errors);
         }
     }
 }

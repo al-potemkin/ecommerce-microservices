@@ -1,26 +1,18 @@
 package com.sndbx.user.exception.config;
 
-import lombok.Getter;
+import com.sndbx.common.exception.ServiceException;
+import com.sndbx.common.exception.data.ApiProblem;
+import com.sndbx.common.exception.data.ErrorCode;
 
 import java.util.List;
 
-@Getter
-public class UserServiceException extends RuntimeException {
+public abstract class UserServiceException extends ServiceException {
 
-    private final ErrorCode errorCode;
-    private final List<ApiProblem.FieldError> errors;
-
-    public UserServiceException(ErrorCode errorCode) {
-        this(errorCode, null, List.of());
+    protected UserServiceException(ErrorCode errorCode, String message, List<ApiProblem.FieldError> errors) {
+        super(errorCode, message, errors);
     }
 
-    public UserServiceException(ErrorCode errorCode, String message) {
-        this(errorCode, message, List.of());
-    }
-
-    public UserServiceException(ErrorCode errorCode, String message, List<ApiProblem.FieldError> errors) {
-        super(message);
-        this.errorCode = errorCode;
-        this.errors = errors != null ? errors : List.of();
+    protected UserServiceException(ErrorCode errorCode, String message) {
+        super(errorCode, message);
     }
 }

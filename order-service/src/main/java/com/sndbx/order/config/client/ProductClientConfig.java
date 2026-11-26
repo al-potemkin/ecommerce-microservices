@@ -16,7 +16,11 @@ public class ProductClientConfig {
             @Value("${app.clients.product-service.base-url}") String baseUrl,
             @Value("${app.clients.product-service.connect-timeout}") Duration connectTimeout,
             @Value("${app.clients.product-service.read-timeout}") Duration readTimeout) {
-        return factory.create(ProductClient.class, "product-service",
-                baseUrl, connectTimeout, readTimeout);
+        return factory.create(
+                ProductClient.class, "product-service",
+                baseUrl,
+                connectTimeout,
+                readTimeout
+        );
     }
 }

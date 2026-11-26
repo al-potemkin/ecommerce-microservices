@@ -1,27 +1,19 @@
 package com.sndbx.inventory.exception.config;
 
+import com.sndbx.common.exception.ServiceException;
+import com.sndbx.common.exception.data.ApiProblem;
+import com.sndbx.common.exception.data.ErrorCode;
+
 import java.util.List;
 
-public abstract class InventoryServiceException extends RuntimeException {
-
-    private final ErrorCode errorCode;
-    private final List<ApiProblem.FieldError> errors;
+public abstract class InventoryServiceException extends ServiceException {
 
     protected InventoryServiceException(ErrorCode errorCode, String detail) {
-        this(errorCode, detail, List.of());
+        super(errorCode, detail);
     }
 
-    protected InventoryServiceException(ErrorCode errorCode, String detail, List<ApiProblem.FieldError> errors) {
-        super(detail, null, false, false);
-        this.errorCode = errorCode;
-        this.errors = errors;
-    }
-
-    public ErrorCode getErrorCode() {
-        return errorCode;
-    }
-
-    public List<ApiProblem.FieldError> getErrors() {
-        return errors;
+    protected InventoryServiceException(ErrorCode errorCode, String detail,
+                                        List<ApiProblem.FieldError> errors) {
+        super(errorCode, detail, errors);
     }
 }

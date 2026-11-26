@@ -1,5 +1,6 @@
 package com.sndbx.order.service;
 
+import com.sndbx.common.exception.data.ApiProblem;
 import com.sndbx.order.client.InventoryClient;
 import com.sndbx.order.client.ProductClient;
 import com.sndbx.order.dto.client.ReservationItem;
@@ -21,7 +22,6 @@ import com.sndbx.order.exception.OrderNotFoundException;
 import com.sndbx.order.exception.ReservationAlreadyCommittedException;
 import com.sndbx.order.exception.ReservationReleasedException;
 import com.sndbx.order.exception.ReturnWindowExpiredException;
-import com.sndbx.order.exception.config.ApiProblem;
 import com.sndbx.order.mapper.OrderMapper;
 import com.sndbx.order.repository.OrderRepository;
 import lombok.RequiredArgsConstructor;

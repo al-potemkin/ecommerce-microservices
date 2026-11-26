@@ -1,7 +1,6 @@
 package com.sndbx.product.service;
 
 import com.sndbx.inventory.events.InventoryEvent;
-import com.sndbx.product.config.KafkaTopicConfig;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.kafka.annotation.KafkaListener;

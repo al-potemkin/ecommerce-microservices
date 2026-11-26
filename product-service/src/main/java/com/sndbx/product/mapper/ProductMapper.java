@@ -15,6 +15,7 @@ import org.mapstruct.MappingTarget;
 public interface ProductMapper {
 
     @Mapping(target = "id", ignore = true)
+    @Mapping(target = "active", ignore = true)
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "updatedAt", ignore = true)
     @Mapping(target = "version", ignore = true)
@@ -22,6 +23,9 @@ public interface ProductMapper {
 
     @Mapping(target = "active", source = "active", defaultValue = "true")
     @Mapping(target = "inStock", constant = "false")
+    @Mapping(target = "withPrice", ignore = true)
+    @Mapping(target = "withActive", ignore = true)
+    @Mapping(target = "withInStock", ignore = true)
     Variant toVariant(VariantRequest request);
 
     @Mapping(target = "id", ignore = true)

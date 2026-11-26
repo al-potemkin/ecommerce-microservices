@@ -1,27 +1,21 @@
 package com.sndbx.order.exception.config;
 
+import com.sndbx.common.exception.ServiceException;
+import com.sndbx.common.exception.data.ApiProblem;
+import com.sndbx.common.exception.data.ErrorCode;
+import lombok.Getter;
+
 import java.util.List;
 
-public abstract class OrderServiceException extends RuntimeException {
-
-    private final ErrorCode errorCode;
-    private final List<ApiProblem.FieldError> errors;
+@Getter
+public abstract class OrderServiceException extends ServiceException {
 
     protected OrderServiceException(ErrorCode errorCode, String detail) {
-        this(errorCode, detail, List.of());
+        super(errorCode, detail);
     }
 
-    protected OrderServiceException(ErrorCode errorCode, String detail, List<ApiProblem.FieldError> errors) {
-        super(detail, null, false, false);
-        this.errorCode = errorCode;
-        this.errors = errors;
-    }
-
-    public ErrorCode getErrorCode() {
-        return errorCode;
-    }
-
-    public List<ApiProblem.FieldError> getErrors() {
-        return errors;
+    protected OrderServiceException(ErrorCode errorCode, String detail,
+                                    List<ApiProblem.FieldError> errors) {
+        super(errorCode, detail, errors);
     }
 }

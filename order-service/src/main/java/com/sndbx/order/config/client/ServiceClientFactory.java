@@ -1,10 +1,7 @@
 package com.sndbx.order.config.client;
 
-import com.sndbx.order.exception.DependencyUnavailableException;
-import com.sndbx.order.exception.UpstreamErrorException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.http.client.HttpClientSettings;
-import org.springframework.http.HttpStatusCode;
 import org.springframework.http.client.JdkClientHttpRequestFactory;
 import org.springframework.security.oauth2.client.web.client.OAuth2ClientHttpRequestInterceptor;
 import org.springframework.stereotype.Component;

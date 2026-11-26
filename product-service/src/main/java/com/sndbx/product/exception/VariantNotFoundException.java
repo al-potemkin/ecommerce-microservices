@@ -1,14 +1,14 @@
 package com.sndbx.product.exception;
 
-import com.sndbx.product.exception.config.ErrorCode;
+import com.sndbx.product.exception.config.ProductErrorCode;
+import com.sndbx.product.exception.config.ProductServiceException;
 
 public class VariantNotFoundException extends ProductServiceException {
     public VariantNotFoundException(String productId, String sku) {
-        super(ErrorCode.VARIANT_NOT_FOUND,
-                "Variant with SKU '" + sku + "' was not found in product '" + productId + "'");
+        super(ProductErrorCode.VARIANT_NOT_FOUND, "Variant with SKU '" + sku + "' was not found in product '" + productId + "'");
     }
 
     public VariantNotFoundException(String sku) {
-        super(ErrorCode.VARIANT_NOT_FOUND, "Variant with SKU '" + sku + "' was not found");
+        super(ProductErrorCode.VARIANT_NOT_FOUND, "Variant with SKU '" + sku + "' was not found");
     }
 }

@@ -1,16 +1,17 @@
 # Run: docker compose up -d
 
 ## TODO:
+
 1. Dockerfile привести к общему виду
 2. Закрыть порты, оставить только api-gateway
 3. Вынести общие классы в отдельный артефакт
 4. трасировка логов сквозь сервисы
 5. inventory-schema продукты со sku, что неизвестны product-service Должны лететь в dlt
 6. swagger в Product-service
-7. 
+7.
 
+PATCH с телом {} 400 EMPTY_UPDATE --- 400 Bad request
 
-PATCH с телом {}	400 EMPTY_UPDATE --- 400 Bad request
 ```json
 {
   "title": "Empty Update",
@@ -25,7 +26,8 @@ PATCH с телом {}	400 EMPTY_UPDATE --- 400 Bad request
 }
 ```
 
-пустое name	400 VALIDATION_FAILED и поле в errors[] --- same
+пустое name 400 VALIDATION_FAILED и поле в errors[] --- same
+
 ```json
 {
   "title": "Validation Failed",
@@ -46,6 +48,7 @@ PATCH с телом {}	400 EMPTY_UPDATE --- 400 Bad request
 ```
 
 api-gateway & product-service
+
 ```yaml
 management:
   otlp:
