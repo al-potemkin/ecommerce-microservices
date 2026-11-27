@@ -11,6 +11,8 @@ app:
   openapi:
     token-url: ${KEYCLOAK_PUBLIC_URL:http://localhost:8180}/realms/ecommerce/protocol/openid-connect/token
     auth-url: ${KEYCLOAK_PUBLIC_URL:http://localhost:8180}/realms/ecommerce/protocol/openid-connect/auth
+    title: Product Service API
+    add-forbidden: true
 
 management:
   endpoint:

@@ -1,2 +1,3 @@
 com.sndbx.common.CommonLibAutoConfiguration
 com.sndbx.common.kafka.CommonKafkaAutoConfiguration
+com.sndbx.common.config.openapi.CommonOpenApiAutoConfiguration
