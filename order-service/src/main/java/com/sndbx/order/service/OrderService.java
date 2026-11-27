@@ -89,8 +89,7 @@ public class OrderService {
 
         ReservationResponse reservation = reserve(orderId, requested);
 
-        Order order = buildOrder(orderId, userId, request.delivery(), requested, variants,
-                reservation.expiresAt());
+        Order order = buildOrder(orderId, userId, request.delivery(), requested, variants, reservation.expiresAt());
         try {
             Order saved = tx.execute(status -> {
                 Order persisted = orderRepository.save(order);
@@ -219,7 +218,8 @@ public class OrderService {
                 : orderRepository.findByStatus(status, pageable);
         return new PageResponse<>(
                 result.map(mapper::toSummary).getContent(),
-                page, size, result.getTotalElements(), result.getTotalPages());
+                page, size, result.getTotalElements(), result.getTotalPages()
+        );
     }
 
     public OrderResponse getForManager(UUID orderId) {
@@ -298,8 +298,7 @@ public class OrderService {
                 .map(e -> new ReservationItem(e.getKey(), e.getValue()))
                 .toList();
 
-        ReservationResponse reservation = inventoryClient.reserve(
-                new ReserveRequest(orderId.toString(), items));
+        ReservationResponse reservation = inventoryClient.reserve(new ReserveRequest(orderId.toString(), items));
 
         switch (reservation.status()) {
             case RESERVED -> {

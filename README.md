@@ -9,6 +9,7 @@
 5. inventory-schema продукты со sku, что неизвестны product-service Должны лететь в dlt
 6. swagger в Product-service
 7. ship статус возможен без адреса у покупателя
+8. пользователь не обязан регистрироваться в системе, чтобы иметь возможость сделать заказ
 
 PATCH с телом {} 400 EMPTY_UPDATE --- 400 Bad request
 

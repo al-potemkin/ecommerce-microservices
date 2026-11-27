@@ -39,7 +39,7 @@ public interface VariantApi {
             description = "Updates the stock availability of a product variant."
     )
     @ApiResponses({
-            @ApiResponse(responseCode = "204", description = ""),
+            @ApiResponse(responseCode = "204", description = "Variant stock status successfully updated"),
             @ApiResponse(responseCode = "404", description = "Product not found", content = @Content)
     })
     @PutMapping("/{sku}/stock")
