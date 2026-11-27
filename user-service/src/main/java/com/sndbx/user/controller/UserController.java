@@ -1,5 +1,6 @@
 package com.sndbx.user.controller;
 
+import com.sndbx.user.controller.openapi.UserApi;
 import com.sndbx.user.dto.request.AddressRequest;
 import com.sndbx.user.dto.request.UpdateProfileRequest;
 import com.sndbx.user.dto.response.AddressResponse;
@@ -19,30 +20,28 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api/users/me")
 @RequiredArgsConstructor
-public class UserController {
+public class UserController implements UserApi {
 
     private final UserService service;
     private final UserProfileMapper mapper;
 
-    @GetMapping
-    public ProfileResponse getUserProfile(@AuthenticationPrincipal Jwt jwt) {
+    @Override
+    public ProfileResponse getUserProfile(Jwt jwt) {
         return mapper.toResponse(service.getProfile(jwt));
     }
 
-    @PutMapping
-    public ProfileResponse updateUserProfile(@AuthenticationPrincipal Jwt jwt,
-                                             @Valid @RequestBody UpdateProfileRequest request) {
+    @Override
+    public ProfileResponse updateUserProfile(Jwt jwt, UpdateProfileRequest request) {
         return mapper.toResponse(service.updateProfile(jwt, request));
     }
 
-    @GetMapping("/address")
-    public AddressResponse getAddress(@AuthenticationPrincipal Jwt jwt) {
+    @Override
+    public AddressResponse getAddress(Jwt jwt) {
         return mapper.toResponse(service.getProfile(jwt)).address();
     }
 
-    @PutMapping("/address")
-    public AddressResponse updateAddress(@AuthenticationPrincipal Jwt jwt,
-                                         @Valid @RequestBody AddressRequest request) {
+    @Override
+    public AddressResponse updateAddress(Jwt jwt, AddressRequest request) {
         return mapper.toResponse(service.updateAddress(jwt, request)).address();
     }
 }
