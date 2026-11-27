@@ -1,12 +1,16 @@
-FROM maven:3-eclipse-temurin-21 AS build
-WORKDIR /app
+FROM maven:3.9-eclipse-temurin-21 AS build
+WORKDIR /build
+
 COPY pom.xml .
 COPY src src
-RUN --mount=type=cache,target=/root/.m2 mvn -q -DskipTests package
+RUN --mount=type=cache,target=/root/.m2 mvn -B -DskipTests package
 
 FROM eclipse-temurin:21-jre
 WORKDIR /app
-RUN useradd -r -u 1001 app
-COPY --from=build /app/target/*.jar app.jar
-USER app
-ENTRYPOINT ["java", "-jar", "app.jar"]
+RUN groupadd --system spring && useradd --system --gid spring spring
+
+COPY --from=build /build/target/*.jar app.jar
+USER spring
+EXPOSE 8080
+
+ENTRYPOINT ["java", "-XX:MaxRAMPercentage=75", "-jar", "app.jar"]

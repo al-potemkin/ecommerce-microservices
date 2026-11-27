@@ -15,6 +15,6 @@ RUN groupadd --system spring && useradd --system --gid spring spring
 
 COPY --from=build /build/order-service/target/*.jar app.jar
 USER spring
-EXPOSE 8083
+EXPOSE 8080
 
 ENTRYPOINT ["java", "-XX:MaxRAMPercentage=75", "-jar", "app.jar"]
